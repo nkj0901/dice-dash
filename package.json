@@ -6,7 +6,7 @@
   "scripts": {
     "build": "node scripts/build.js",
     "dev": "node scripts/build.js && npx --yes serve@14.2.4 public -l 3000",
-    "test": "node test/game.test.js && node test/host.test.js && node test/succession.test.js"
+    "test": "node test/game.test.js && node test/host.test.js && node test/render.test.js && node test/succession.test.js"
   },
   "engines": {
     "node": ">=18"

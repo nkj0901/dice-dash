@@ -54,6 +54,25 @@ function escHtml(s) {
   return s;
 }
 
+// 방 상태(room:state)에서 온 값은 믿지 않고, 허용된 값만 화면에 넣는다 (#2)
+function safeColor(c) {
+  if (COLOR_LIST.indexOf(c) >= 0) return c;
+  return COLOR_LIST[0];
+}
+function safeCellType(t) {
+  if (typeof t == 'string' && CELL_ICON.hasOwnProperty(t)) return t;
+  return 'normal';
+}
+function safeItem(t) {
+  if (typeof t == 'string' && ITEM_ICON.hasOwnProperty(t)) return t;
+  return null;
+}
+function safeNum(n) {
+  n = Number(n);
+  if (isFinite(n)) return Math.floor(n);
+  return 0;
+}
+
 function toast(msg, kind) {
   if (kind == undefined) kind = 'error';
   var t = document.getElementById('toast');
@@ -142,8 +161,8 @@ function btnLeave_Click(where) {
 }
 
 function drawLobby() {
-  document.getElementById('lobby-code').innerHTML = g_room.code;
-  document.getElementById('lobby-count').innerHTML = g_room.members.length;
+  document.getElementById('lobby-code').textContent = g_room.code;
+  document.getElementById('lobby-count').textContent = g_room.members.length;
   var html = '';
   for (var i = 0; i < g_room.members.length; i++) {
     var m = g_room.members[i];
@@ -178,6 +197,7 @@ function drawLobby() {
 // 장식 종류는 COLOR_LIST(game_logic.js) 순서에 맞춰 고정 → 대기실·보드·순위표에서 같은 모습.
 var CHAR_KINDS = ['cat', 'bunny', 'bear', 'sprout', 'antenna', 'chick', 'horn', 'bow'];
 function charHtml(color, extraCls, title) {
+  color = safeColor(color);
   var idx = COLOR_LIST.indexOf(color);
   if (idx < 0) idx = 0;
   var kind = CHAR_KINDS[idx % CHAR_KINDS.length];
@@ -223,7 +243,7 @@ function drawBoard() {
   arena.className = 'arena ' + (size.portrait ? 'portrait' : 'landscape');
   var html = '';
   for (var i = 0; i < g.board.length; i++) {
-    var type = g.board[i];
+    var type = safeCellType(g.board[i]);
     var pc = perimeterCell(i, COLS, ROWS);
     var icon = CELL_ICON[type];
     var name = CELL_NAME[type];
@@ -268,11 +288,12 @@ function drawPlayers() {
     var itemStr = '';
     for (var k = 0; k < p.items.length; k++) {
       if (k > 0) itemStr += ' ';
+      if (safeItem(p.items[k]) == null) continue;
       itemStr += ITEM_ICON[p.items[k]];
     }
     html += '<span class="pitems">' + itemStr + '</span>';
-    var pos = p.position;
-    if (g_displayPos[p.id] != undefined) pos = g_displayPos[p.id];
+    var pos = safeNum(p.position);
+    if (g_displayPos[p.id] != undefined) pos = safeNum(g_displayPos[p.id]);
     html += '<span class="ppos">' + (p.alive ? pos + '칸' : '탈락') + '</span>';
     html += '</li>';
   }
@@ -331,7 +352,11 @@ function drawControls() {
     if (g.players[i].id == g_myId) me = g.players[i];
   }
   var items = [];
-  if (me && me.alive) items = me.items;
+  if (me && me.alive) {
+    for (var k = 0; k < me.items.length; k++) {
+      if (safeItem(me.items[k]) != null) items.push(me.items[k]);
+    }
+  }
   var canUseItem = canAct && !g.itemUsedThisTurn;
   if (!canUseItem) g_selItem = null;
 
@@ -394,11 +419,12 @@ function drawResult() {
   var r = g.rankings;
   if (r == null) r = [];
   for (var i = 0; i < r.length; i++) {
-    html += '<li class="' + (r[i].rank == 1 ? 'first' : '') + '">';
-    html += '<span class="rank">' + (r[i].rank ? r[i].rank + '위' : '-') + '</span>';
+    var rank = r[i].rank ? safeNum(r[i].rank) : 0;
+    html += '<li class="' + (rank == 1 ? 'first' : '') + '">';
+    html += '<span class="rank">' + (rank ? rank + '위' : '-') + '</span>';
     html += charHtml(r[i].color, 'mini');
-    html += '<span class="pname">' + escHtml(r[i].nickname) + (r[i].rank == 1 ? ' 🏆' : '') + '</span>';
-    html += '<span class="ppos">' + (r[i].rank ? r[i].position + '칸' : '탈락') + '</span>';
+    html += '<span class="pname">' + escHtml(r[i].nickname) + (rank == 1 ? ' 🏆' : '') + '</span>';
+    html += '<span class="ppos">' + (rank ? safeNum(r[i].position) + '칸' : '탈락') + '</span>';
     html += '</li>';
   }
   document.getElementById('rankings').innerHTML = html;
@@ -423,7 +449,7 @@ function render() {
     return;
   }
   showScreen('game');
-  document.getElementById('game-code').innerHTML = g_room.code;
+  document.getElementById('game-code').textContent = g_room.code;
   drawBoard();
   drawPlayers();
   drawLog();
