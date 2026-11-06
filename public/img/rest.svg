@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="moon" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff8c9"/>
+      <stop offset="1" stop-color="#ffc94a"/>
+    </linearGradient>
+    <linearGradient id="cloud" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#d9d2ff"/>
+    </linearGradient>
+  </defs>
+  <path d="M30 5 a17 17 0 1 0 19 25 a14 14 0 1 1 -19 -25z" fill="url(#moon)" stroke="#f0b400" stroke-width="1.5"/>
+  <path d="M24 20 q2.5 2.5 5 0" stroke="#b07a00" stroke-width="2" fill="none" stroke-linecap="round"/>
+  <g fill="url(#cloud)">
+    <circle cx="20" cy="46" r="9"/>
+    <circle cx="32" cy="42" r="12"/>
+    <circle cx="45" cy="47" r="8"/>
+    <rect x="12" y="46" width="41" height="11" rx="5.5"/>
+  </g>
+  <text x="45" y="20" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="13" fill="#ffffff">Z</text>
+  <text x="54" y="11" font-family="Arial Black, Arial, sans-serif" font-weight="900" font-size="9" fill="#e6dcff">z</text>
+</svg>

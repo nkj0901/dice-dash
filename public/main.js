@@ -230,7 +230,8 @@ function drawBoard() {
     if (icon == undefined) { icon = ''; name = ''; }
     html += '<div class="cell t-' + type + '" data-index="' + i + '" style="grid-row:' + (pc.row + 1) + ';grid-column:' + (pc.col + 1) + '">';
     html += '<span class="num">' + i + '</span>';
-    html += '<span class="icon">' + icon + '</span>';
+    // 특수 칸은 public/img/<종류>.svg 일러스트를 크게 (일반 칸은 그림 없음)
+    if (icon != '') html += '<img class="art" src="img/' + type + '.svg" alt="' + name + '" draggable="false">';
     html += '<span class="name">' + name + '</span>';
     html += '<div class="tokens">';
     for (var j = 0; j < g.players.length; j++) {
