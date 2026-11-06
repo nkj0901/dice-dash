@@ -6,6 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>다이스 대시</title>
   <link rel="stylesheet" href="style.css">
+  <script>
+    // 스킨을 화면 그리기 전에 먼저 적용 (깜빡임 방지). 자세한 건 main.js의 skin_* 참고
+    (function () {
+      var id = null;
+      try { id = localStorage.getItem('dice-dash-skin'); } catch (e) {}
+      if (id != 'classic' && id != 'xmas') {
+        var m = new Date().getMonth();
+        id = (m == 10 || m == 11) ? 'xmas' : 'classic';
+      }
+      document.documentElement.setAttribute('data-skin', id);
+    })();
+  </script>
 </head>
 <body>
   <!-- 1. 입장 화면 -->
@@ -23,6 +35,10 @@
         <input id="room-code" maxlength="4" placeholder="방 코드" autocomplete="off" onkeydown="if(event.keyCode==13) btnJoin_Click();">
         <button id="btn-join" class="btn" onclick="btnJoin_Click()">입장하기</button>
       </div>
+      <label class="skin-row">
+        <span>스킨</span>
+        <select class="skin-select" onchange="skin_set(this.value)" aria-label="스킨 고르기"></select>
+      </label>
     </div>
   </section>
 
@@ -38,7 +54,10 @@
           </div>
           <div class="hint">다른 사람은 <b id="lobby-url"></b> 에 접속해 이 코드를 입력하세요.</div>
         </div>
-        <button id="btn-leave-lobby" class="btn ghost small" onclick="btnLeave_Click('lobby')">나가기</button>
+        <div class="head-right">
+          <select class="skin-select" onchange="skin_set(this.value)" aria-label="스킨 고르기"></select>
+          <button id="btn-leave-lobby" class="btn ghost small" onclick="btnLeave_Click('lobby')">나가기</button>
+        </div>
       </div>
       <div class="label"><span id="lobby-count"></span> / 8명</div>
       <ul id="lobby-members" class="member-list"></ul>
@@ -53,6 +72,7 @@
       <div class="logo small">🎲 <span class="logo-text">다이스 대시</span></div>
       <div id="turn-indicator" class="turn-indicator"></div>
       <div class="head-right">
+        <select class="skin-select" onchange="skin_set(this.value)" aria-label="스킨 고르기"></select>
         <span class="room-chip">방 <b id="game-code"></b></span>
         <button id="btn-leave-game" class="btn ghost small" onclick="btnLeave_Click('game')">나가기</button>
       </div>
@@ -65,7 +85,7 @@
         <ul id="player-list" class="player-list"></ul>
       </div>
       <div class="panel controls">
-        <div id="dice" class="dice">🎲</div>
+        <div id="dice" class="dice"></div>
         <div id="banner" class="banner"></div>
         <div id="pending" class="pending"></div>
         <div class="items-label">내 아이템 <small>(굴리기 전에 사용, 턴당 1장)</small></div>

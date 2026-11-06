@@ -41,6 +41,80 @@ var ITEM_DESC = {
 };
 var DICE_FACES = ['⚀', '⚁', '⚂', '⚃', '⚄', '⚅'];
 
+// 주사위: 점(pip)이 찍힌 입체 주사위. n = 1~6
+// 3x3 칸 중 점이 들어갈 자리 (0~8, 왼쪽 위부터)
+var DIE_PIPS = [[4], [0, 8], [0, 4, 8], [0, 2, 6, 8], [0, 2, 4, 6, 8], [0, 2, 3, 5, 6, 8]];
+function dieHtml(n) {
+  n = parseInt(n, 10);
+  if (!(n >= 1 && n <= 6)) n = 6;
+  var html = '<span class="die f' + n + '">';
+  for (var i = 0; i < 9; i++) {
+    html += (DIE_PIPS[n - 1].indexOf(i) >= 0) ? '<i></i>' : '<b></b>';
+  }
+  return html + '</span>';
+}
+function diceHtml(arr) {
+  var html = '';
+  for (var i = 0; i < arr.length; i++) html += dieHtml(arr[i]);
+  return html;
+}
+
+// ===== 스킨 =====
+// <html data-skin="..."> 값으로 style.css의 스킨 규칙이 바뀐다. 고른 값은 이 브라우저(localStorage)에만 저장.
+// 칸 그림은 스킨마다 img/<폴더>/ 에서 가져온다 (기본 스킨은 img/ 바로 아래).
+var SKINS = [
+  { id: 'classic', name: '✨ 기본', imgDir: 'img/' },
+  { id: 'xmas', name: '🎄 크리스마스', imgDir: 'img/xmas/' }
+];
+var SKIN_KEY = 'dice-dash-skin';
+function skin_find(id) {
+  for (var i = 0; i < SKINS.length; i++) {
+    if (SKINS[i].id == id) return SKINS[i];
+  }
+  return null;
+}
+// 고른 적이 없으면 11~12월은 크리스마스 스킨이 기본
+function skin_default() {
+  var m = new Date().getMonth();
+  return (m == 10 || m == 11) ? 'xmas' : 'classic';
+}
+function skin_get() {
+  var id = null;
+  try { id = localStorage.getItem(SKIN_KEY); } catch (e) {}
+  if (skin_find(id) == null) id = skin_default();
+  return id;
+}
+function skin_apply(id) {
+  if (skin_find(id) == null) id = 'classic';
+  if (document.documentElement) document.documentElement.setAttribute('data-skin', id);
+  var sels = document.querySelectorAll ? document.querySelectorAll('.skin-select') : [];
+  for (var i = 0; i < sels.length; i++) sels[i].value = id;
+}
+function skin_set(id) {
+  if (skin_find(id) == null) return;
+  try { localStorage.setItem(SKIN_KEY, id); } catch (e) {}
+  skin_apply(id);
+  if (g_room != null && g_room.game && g_room.status != 'lobby') drawBoard();
+}
+// 스킨 고르기 <select> 채우기 (입장·대기실·게임 화면에 하나씩)
+function skin_fillSelects() {
+  var sels = document.querySelectorAll('.skin-select');
+  var cur = skin_get();
+  for (var i = 0; i < sels.length; i++) {
+    var html = '';
+    for (var j = 0; j < SKINS.length; j++) {
+      html += '<option value="' + SKINS[j].id + '">' + SKINS[j].name + '</option>';
+    }
+    sels[i].innerHTML = html;
+    sels[i].value = cur;
+  }
+}
+function cellArtSrc(type) {
+  var s = skin_find(skin_get());
+  if (s == null) s = SKINS[0];
+  return s.imgDir + type + '.svg';
+}
+
 
 // html 특수문자 처리
 function escHtml(s) {
@@ -203,7 +277,7 @@ function charHtml(color, extraCls, title) {
   var kind = CHAR_KINDS[idx % CHAR_KINDS.length];
   var html = '<div class="char k-' + kind + (extraCls ? ' ' + extraCls : '') + '" style="--c:' + color + '"';
   if (title) html += ' title="' + escHtml(title) + '"';
-  html += '><span class="face"></span></div>';
+  html += '><span class="face"></span><span class="hat"></span></div>';  // hat: 크리스마스 스킨의 산타 모자
   return html;
 }
 
@@ -251,7 +325,7 @@ function drawBoard() {
     html += '<div class="cell t-' + type + '" data-index="' + i + '" style="grid-row:' + (pc.row + 1) + ';grid-column:' + (pc.col + 1) + '">';
     html += '<span class="num">' + i + '</span>';
     // 특수 칸은 public/img/<종류>.svg 일러스트를 크게 (일반 칸은 그림 없음)
-    if (icon != '') html += '<img class="art" src="img/' + type + '.svg" alt="' + name + '" draggable="false">';
+    if (icon != '') html += '<img class="art" src="' + cellArtSrc(type) + '" alt="' + name + '" draggable="false">';
     html += '<span class="name">' + name + '</span>';
     html += '<div class="tokens">';
     for (var j = 0; j < g.players.length; j++) {
@@ -523,22 +597,14 @@ function playOneEvent(ev) {
     clearInterval(g_diceTimer);
     g_diceTimer = setInterval(function () {
       if (new Date().getTime() < end) {
-        var s = '';
-        for (var k = 0; k < ev.dice.length; k++) {
-          if (k > 0) s += ' ';
-          s += DICE_FACES[Math.floor(Math.random() * 6)];
-        }
-        dice.innerHTML = s;
+        var rnd = [];
+        for (var k = 0; k < ev.dice.length; k++) rnd.push(1 + Math.floor(Math.random() * 6));
+        dice.innerHTML = diceHtml(rnd);
         return;
       }
       clearInterval(g_diceTimer);
-      dice.className = 'dice';
-      var s2 = '';
-      for (var k2 = 0; k2 < ev.dice.length; k2++) {
-        if (k2 > 0) s2 += ' ';
-        s2 += DICE_FACES[ev.dice[k2] - 1];
-      }
-      dice.innerHTML = s2;
+      dice.className = 'dice landed';
+      dice.innerHTML = diceHtml(ev.dice);
       document.getElementById('banner').innerHTML = escHtml(ev.text);
       setTimeout(playNext, 350);
     }, 70);
@@ -605,7 +671,7 @@ function ui_onRoomState(state) {
   g_room = state;
   if (!wasGame && state.game) {
     document.getElementById('banner').innerHTML = '';
-    document.getElementById('dice').innerHTML = '🎲';
+    document.getElementById('dice').innerHTML = dieHtml(6);
   }
   render();
 }
@@ -639,6 +705,9 @@ function ui_onDisconnect() {
 window.onload = function () {
   document.getElementById('nickname').value = getCookieNick();
   document.getElementById('lobby-url').innerHTML = location.origin;
+  document.getElementById('dice').innerHTML = dieHtml(6);
+  skin_fillSelects();
+  skin_apply(skin_get());
   render();
   // 새로고침 전에 들어가 있던 방이 있으면 자동으로 다시 입장
   if (net_resume()) toast('이전 방에 다시 연결하는 중...', 'info');

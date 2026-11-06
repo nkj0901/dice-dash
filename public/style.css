@@ -529,3 +529,277 @@ body::before {
     0 0 18px #fff,
     0 0 40px var(--cc);
 }
+
+/* =====================================================================
+   보드게임 느낌 강화 (모든 스킨 공통)
+   ===================================================================== */
+/* 게임판: 두꺼운 테두리 액자 + 안쪽 판 (실제 보드게임 판처럼) */
+.arena {
+  border: 0;
+  box-shadow:
+    inset 0 0 0 6px var(--frame, #4a2fa8),
+    inset 0 0 0 8px var(--frame-hi, rgba(255, 220, 140, 0.55)),
+    inset 0 4px 22px rgba(0, 0, 0, 0.45),
+    0 0 0 2px var(--frame-hi, rgba(255, 220, 140, 0.55)),
+    0 0 40px var(--arena-glow, rgba(150, 110, 255, 0.35)),
+    0 14px 30px rgba(0, 0, 0, 0.4);
+  padding: 18px 18px 22px;
+}
+.arena.portrait { padding: 12px 12px 15px; }
+
+/* 칸 번호: 동그란 배지 */
+.cell .num {
+  align-self: flex-start;
+  min-width: 18px; height: 18px; padding: 0 4px; line-height: 18px; text-align: center;
+  border-radius: 999px; font-size: 10px; opacity: 1;
+  background: rgba(0, 0, 0, 0.28); box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.25);
+}
+.arena.portrait .cell .num { min-width: 14px; height: 14px; line-height: 14px; font-size: 8px; padding: 0 2px; }
+
+/* 주사위: 점이 찍힌 입체 주사위 (main.js dieHtml) */
+.dice {
+  display: flex; justify-content: center; align-items: center; gap: 14px;
+  height: 70px; font-size: 0; perspective: 300px;
+}
+.dice.rolling { animation: none; }
+.die {
+  --d: 54px;
+  width: var(--d); height: var(--d); padding: calc(var(--d) * 0.13);
+  display: grid; grid-template-columns: repeat(3, 1fr); grid-template-rows: repeat(3, 1fr);
+  background: linear-gradient(145deg, #ffffff, var(--die-bg2, #e9e4fb));
+  border-radius: 14px;
+  box-shadow:
+    inset 0 -4px 0 var(--die-edge, #d0c7ef),
+    inset 0 2px 0 #fff,
+    0 6px 0 var(--die-side, #9d91d0),
+    0 11px 16px rgba(0, 0, 0, 0.4);
+  transform: rotateX(14deg) rotateZ(-5deg);
+}
+.die + .die { transform: rotateX(14deg) rotateZ(6deg); }
+.die i {
+  width: 74%; height: 74%; place-self: center; border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, var(--pip-hi, #6a6a8e), var(--pip, #1d1d2b) 70%);
+  box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.4);
+}
+.die.f1 i { width: 100%; height: 100%; background: radial-gradient(circle at 35% 30%, #ff8a9a, #d6143a 70%); }
+.dice.rolling .die { animation: tumble 0.3s linear infinite; }
+.dice.rolling .die + .die { animation-duration: 0.36s; animation-direction: reverse; }
+.dice.landed .die { animation: dieLand 0.4s cubic-bezier(.3, 1.6, .5, 1); }
+.arena.portrait .die { --d: 42px; border-radius: 11px; }
+.arena.portrait .dice { height: 56px; }
+@keyframes tumble {
+  0% { transform: rotateX(0) rotateY(0) rotateZ(0) translateY(-6px); }
+  50% { transform: rotateX(180deg) rotateY(90deg) rotateZ(20deg) translateY(4px); }
+  100% { transform: rotateX(360deg) rotateY(180deg) rotateZ(0) translateY(-6px); }
+}
+@keyframes dieLand {
+  0% { transform: rotateX(14deg) scale(1.35); }
+  100% { transform: rotateX(14deg) rotateZ(-5deg) scale(1); }
+}
+
+/* 스킨 고르기 */
+.skin-select {
+  background: var(--bg2); color: var(--text);
+  border: 1px solid var(--line); border-radius: 999px;
+  padding: 5px 10px; font: inherit; font-size: 13px; font-weight: 600; cursor: pointer;
+}
+.skin-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 18px; color: var(--muted); font-size: 13px; }
+.lobby-head .head-right { display: flex; align-items: center; gap: 8px; }
+@media (max-width: 900px) {
+  .game-head .skin-select { max-width: 120px; }
+}
+
+/* 결과 화면: 색종이 */
+.result { position: relative; }
+.result::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; z-index: 0;
+  background-image:
+    radial-gradient(4px 7px at 10% 10%, #ff5c7a 98%, transparent),
+    radial-gradient(5px 5px at 25% 30%, #ffc93c 98%, transparent),
+    radial-gradient(4px 7px at 42% 5%, #4fd1ff 98%, transparent),
+    radial-gradient(5px 5px at 60% 25%, #7dff9a 98%, transparent),
+    radial-gradient(4px 7px at 78% 12%, #e05cff 98%, transparent),
+    radial-gradient(5px 5px at 92% 34%, #ffc93c 98%, transparent);
+  background-size: 100% 160px;
+  animation: confetti 3s linear infinite;
+  opacity: 0.85;
+}
+.result > * { position: relative; z-index: 1; }
+@keyframes confetti { to { background-position: 0 160px; } }
+
+/* =====================================================================
+   크리스마스 스킨  (<html data-skin="xmas">)
+   ===================================================================== */
+html[data-skin="xmas"] {
+  --bg: #0d2238;
+  --bg2: #17405a;
+  --card: #145a3a;
+  --line: #2f8f62;
+  --muted: #d7f5e3;
+  --accent: #ffd23f;
+  --accent-ink: #3a2400;
+  --cell: #23905a;
+  --frame: #b3132f;
+  --frame-hi: #ffd23f;
+  --arena-glow: rgba(255, 210, 63, 0.35);
+  --die-bg2: #fff1f1;
+  --die-edge: #f0cfcf;
+  --die-side: #b3132f;
+  --pip: #c8102e;
+  --pip-hi: #ff6b7f;
+}
+html[data-skin="xmas"] body {
+  background:
+    radial-gradient(circle at 12% 8%, rgba(230, 40, 70, 0.32), transparent 38%),
+    radial-gradient(circle at 88% 12%, rgba(40, 200, 120, 0.3), transparent 40%),
+    radial-gradient(ellipse at 50% 115%, rgba(255, 255, 255, 0.35), transparent 45%),
+    linear-gradient(170deg, #12345a 0%, var(--bg) 55%, #081627 100%);
+  background-attachment: fixed;
+}
+/* 내리는 눈 (크기가 다른 두 겹) */
+html[data-skin="xmas"] body::after {
+  content: ""; position: fixed; inset: 0; pointer-events: none; z-index: 5;
+  background-image:
+    radial-gradient(3px 3px at 20px 30px, #fff 70%, transparent),
+    radial-gradient(2px 2px at 90px 120px, #fff 70%, transparent),
+    radial-gradient(4px 4px at 150px 60px, rgba(255, 255, 255, 0.9) 70%, transparent),
+    radial-gradient(2px 2px at 60px 170px, #fff 70%, transparent),
+    radial-gradient(3px 3px at 180px 190px, rgba(255, 255, 255, 0.8) 70%, transparent),
+    radial-gradient(2px 2px at 40px 80px, rgba(255, 255, 255, 0.7) 70%, transparent),
+    radial-gradient(3px 3px at 120px 10px, rgba(255, 255, 255, 0.8) 70%, transparent),
+    radial-gradient(2px 2px at 200px 140px, rgba(255, 255, 255, 0.7) 70%, transparent);
+  background-size: 220px 220px, 220px 220px, 220px 220px, 220px 220px, 300px 300px, 300px 300px, 300px 300px, 300px 300px;
+  animation: snowfall 14s linear infinite;
+  opacity: 0.85;
+}
+@keyframes snowfall {
+  to { background-position: 40px 220px, 40px 220px, 40px 220px, 40px 220px, -30px 300px, -30px 300px, -30px 300px, -30px 300px; }
+}
+
+/* 로고: 빨강·하양·초록 + 트리 */
+html[data-skin="xmas"] .logo .logo-text {
+  background: linear-gradient(90deg, #ff4d6d, #ffffff, #3ddc6e, #ffd23f, #ff4d6d);
+  background-size: 300% 100%;
+  -webkit-background-clip: text; background-clip: text;
+}
+html[data-skin="xmas"] .logo::after { content: " \1F384"; }
+html[data-skin="xmas"] .logo { filter: drop-shadow(0 0 10px rgba(255, 210, 63, 0.5)); }
+
+/* 카드·패널: 초록 바탕에 금색 테두리, 위에 쌓인 눈 */
+html[data-skin="xmas"] .card,
+html[data-skin="xmas"] .panel {
+  position: relative;
+  background: linear-gradient(180deg, rgba(28, 120, 74, 0.96), rgba(14, 78, 48, 0.96));
+  border: 2px solid rgba(255, 210, 63, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2), 0 4px 0 #0a3a24, 0 0 30px rgba(255, 210, 63, 0.2), 0 12px 24px rgba(0, 0, 0, 0.35);
+}
+html[data-skin="xmas"] .card::after,
+html[data-skin="xmas"] .panel::after {
+  content: ""; position: absolute; left: 6px; right: 6px; top: -7px; height: 13px; pointer-events: none;
+  background:
+    radial-gradient(10px 8px at 10px 8px, #fff 96%, transparent) 0 0 / 26px 13px repeat-x,
+    linear-gradient(#fff, #fff) 0 0 / 100% 6px no-repeat;
+  border-radius: 8px 8px 0 0;
+  filter: drop-shadow(0 2px 1px rgba(0, 0, 0, 0.2));
+}
+html[data-skin="xmas"] .result::after { z-index: 2; }
+html[data-skin="xmas"] .panel h3 { color: #ffe9a0; }
+html[data-skin="xmas"] .member-list li,
+html[data-skin="xmas"] .rankings li,
+html[data-skin="xmas"] .item-chip { background: rgba(0, 0, 0, 0.22); border-color: rgba(255, 255, 255, 0.15); }
+html[data-skin="xmas"] .rankings li.first { background: rgba(255, 210, 63, 0.25); }
+html[data-skin="xmas"] .room-code { color: #ffd23f; text-shadow: 0 0 12px rgba(255, 210, 63, 0.6); }
+
+/* 버튼: 사탕 지팡이 빨강 */
+html[data-skin="xmas"] .btn.primary {
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.16) 0 8px, transparent 8px 16px),
+    linear-gradient(180deg, #ff5a6e, #d6143a);
+  color: #fff; text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 0 #8e0b20, 0 7px 12px rgba(0, 0, 0, 0.3);
+}
+html[data-skin="xmas"] .btn.primary:hover:not(:disabled) {
+  background:
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.2) 0 8px, transparent 8px 16px),
+    linear-gradient(180deg, #ff7083, #e01e45);
+}
+html[data-skin="xmas"] .btn.primary:active:not(:disabled) { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 1px 0 #8e0b20, 0 3px 6px rgba(0, 0, 0, 0.3); }
+html[data-skin="xmas"] #btn-roll:not(:disabled) { animation: btnGlowXmas 1.6s ease-in-out infinite; }
+@keyframes btnGlowXmas {
+  50% { box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 0 #8e0b20, 0 0 26px rgba(255, 90, 110, 0.9); }
+}
+html[data-skin="xmas"] .turn-indicator.mine { background: #ffd23f; box-shadow: 0 0 18px rgba(255, 210, 63, 0.8); }
+
+/* 게임판: 초록 펠트 + 위아래로 번갈아 깜빡이는 전구 줄 */
+html[data-skin="xmas"] .arena {
+  background:
+    radial-gradient(5px 6px at 9px 8px, #ff3b5c 90%, transparent) 0 0 / 56px 16px repeat-x,
+    radial-gradient(5px 6px at 37px 8px, #3dff88 90%, transparent) 0 0 / 56px 16px repeat-x,
+    radial-gradient(5px 6px at 23px 8px, #ffd23f 90%, transparent) 0 100% / 56px 16px repeat-x,
+    radial-gradient(5px 6px at 51px 8px, #4fc3ff 90%, transparent) 0 100% / 56px 16px repeat-x,
+    radial-gradient(ellipse at 50% 40%, #1d7a4c, #0f4d30 80%);
+  animation: lightsChase 1.2s steps(1) infinite;
+}
+@keyframes lightsChase {
+  50% { background-position: 28px 0, 28px 0, 28px 100%, 28px 100%, 0 0; }
+}
+/* 칸: 초록·빨강이 번갈아, 위에는 눈이 소복 */
+html[data-skin="xmas"] .cell.t-normal { --cc: #2a9d5c; }
+html[data-skin="xmas"] .cell.t-normal:nth-child(even) { --cc: #c9243f; }
+html[data-skin="xmas"] .cell.t-start { --cc: #e0243f; }
+html[data-skin="xmas"] .cell.t-boost { --cc: #f0a500; }
+html[data-skin="xmas"] .cell.t-trap { --cc: #3b8fd6; }
+html[data-skin="xmas"] .cell.t-rest { --cc: #6f5cff; }
+html[data-skin="xmas"] .cell.t-reroll { --cc: #14b8a0; }
+html[data-skin="xmas"] .cell.t-item { --cc: #ff6a3d; }
+html[data-skin="xmas"] .cell.t-swap { --cc: #d14bd8; }
+html[data-skin="xmas"] .cell.t-finish {
+  --cc: #e0243f;
+  background:
+    linear-gradient(105deg, transparent 42%, rgba(255, 255, 255, 0.6) 50%, transparent 58%) 0 0 / 300% 100% no-repeat,
+    linear-gradient(180deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0) 55%),
+    repeating-linear-gradient(45deg, #ffffff 0 10px, #e0243f 10px 20px);
+}
+html[data-skin="xmas"] .cell::before {
+  content: ""; position: absolute; left: -2px; right: -2px; top: -5px; height: 11px; z-index: 1; pointer-events: none;
+  background:
+    radial-gradient(7px 6px at 7px 6px, #fff 95%, transparent) 0 0 / 18px 11px repeat-x,
+    linear-gradient(#fff, #fff) 0 0 / 100% 5px no-repeat;
+  border-radius: 10px 10px 0 0;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.25));
+}
+html[data-skin="xmas"] .arena.portrait .cell::before { top: -3px; height: 7px; background-size: 12px 7px, 100% 3px; }
+html[data-skin="xmas"] .cell .num { margin-top: 3px; }
+
+/* 캐릭터: 산타 모자 (main.js charHtml의 .hat) */
+.char .hat { display: none; }
+html[data-skin="xmas"] .char .hat {
+  display: block; position: absolute; z-index: 2; pointer-events: none;
+  left: 16%; top: -30%; width: 68%; height: 46%;
+  background: linear-gradient(#fff, #fff) 0 100% / 100% 30% no-repeat;
+  border-radius: 999px 999px 6px 6px / 50% 50% 6px 6px;
+  transform: rotate(-8deg);
+}
+html[data-skin="xmas"] .char .hat::before {
+  content: ""; position: absolute; left: 6%; right: 6%; bottom: 22%; top: -22%;
+  background: linear-gradient(160deg, #ff5a5a, #c8102e);
+  clip-path: polygon(0 100%, 100% 100%, 92% 8%, 40% 30%);
+}
+html[data-skin="xmas"] .char .hat::after {
+  content: ""; position: absolute; right: -2%; top: -34%; width: 26%; height: 36%;
+  border-radius: 50%; background: radial-gradient(circle at 35% 35%, #fff, #dfe7ef);
+}
+
+html[data-skin="xmas"] .player-list li.turn { background: rgba(255, 210, 63, 0.15); }
+html[data-skin="xmas"] .log li:last-child { background: rgba(255, 210, 63, 0.16); }
+html[data-skin="xmas"] .result::before {
+  background-image:
+    radial-gradient(4px 4px at 10% 10%, #fff 98%, transparent),
+    radial-gradient(5px 5px at 25% 30%, #ffd23f 98%, transparent),
+    radial-gradient(3px 3px at 42% 5%, #fff 98%, transparent),
+    radial-gradient(5px 5px at 60% 25%, #ff4d6d 98%, transparent),
+    radial-gradient(4px 4px at 78% 12%, #fff 98%, transparent),
+    radial-gradient(5px 5px at 92% 34%, #3ddc6e 98%, transparent);
+}
+/* 결승 칸 줄무늬 위 글자가 잘 보이게 */
+.cell.t-finish .name, .cell.t-finish .num { align-self: flex-start; background: rgba(0, 0, 0, 0.42); border-radius: 999px; padding: 0 6px; }
