@@ -30,6 +30,18 @@ test('닉네임 중복·게임 중 입장 거절은 본인에게만 오류', () 
   assert.strictEqual(last('app:error').payload.message, '이미 게임이 진행 중인 방입니다.');
 });
 
+test('게임 중 새로고침한 멤버(같은 id)는 다시 입장하면 상태를 받고 계속 플레이', () => {
+  const { host, out, last } = setup();
+  host.handle('b', 'room:join', { nickname: '비' });
+  host.handle('h', 'game:start');
+  const before = out.length;
+  host.handle('b', 'room:join', { nickname: '비' });
+  assert.ok(!out.slice(before).some((m) => m.event === 'app:error'));
+  const s = last('room:state').payload;
+  assert.strictEqual(s.status, 'playing');
+  assert.ok(s.game.players.find((p) => p.id === 'b').alive);
+});
+
 test('같은 사람이 입장 요청을 다시 보내도 중복 추가 안 됨', () => {
   const { host, last } = setup();
   host.handle('b', 'room:join', { nickname: '비' });

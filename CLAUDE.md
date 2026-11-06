@@ -37,6 +37,8 @@ vendor/supabase.js → config.js (window.DICE_CONFIG) → game_logic.js → netw
   - `c2s` `{from, event, payload}`: 모든 참가자 → 방장. `broadcast.self: true`라서 방장 자신의 요청도 같은 경로로 돌아와요. 방장 브라우저만(`g_hostRoom != null`) `host_onMessage`로 처리해요.
   - `s2c` `{to, event, payload}`: 방장 → 참가자. `to`가 null이면 전체에게 보내요. 앱 이벤트는 `room:state`, `game:events`, `app:error`, `room:left`예요.
   - 나간 사람은 Presence로 감지해요. 방장이 나가면 `g_lastState.members` 순서상 첫 번째로 남아 있는 사람이 `host_takeOver`로 마지막 상태를 받아 방 서버가 돼요. 그래서 방 상태는 JSON으로 직렬화할 수 있어야 해요.
+  - Presence에서 빠져도 바로 탈락시키지 않고 `LEAVE_GRACE_MS`(8초) 기다려요(`net_scheduleRemove`). 플레이어 id와 마지막 방은 탭별 `sessionStorage`에 저장돼서, 새로고침하면 `net_resume`이 같은 id로 자동 재입장해요. 직접 나가기는 `room:leave`를 보내 바로 탈락 처리돼요.
+  - `s2c`는 현재 방장(`hostId`)이 보낸 것만 받아요(`net_isFromHost`). 단 `from`은 보내는 쪽이 적는 값이라 인증은 아니에요.
 - **`main.js`**: 화면을 그리고 애니메이션 큐를 관리해요. `network.js`가 `ui_onRoomState`, `ui_onGameEvents`, `ui_onError`, `ui_onRoomLeft`, `ui_onDisconnect`를 호출해요. 버튼 이벤트는 `index.html`의 `onclick` 속성으로 연결돼 있어요.
 - 클라이언트가 보내는 게임 요청 이벤트는 `room:join`, `game:start`, `game:roll`, `game:useItem`, `game:restart`, `room:leave`예요. 새 이벤트를 추가하면 `host_onMessage`(방장 처리)와 `net_onS2C`/`main.js`(화면 처리)를 함께 고쳐야 해요.
 

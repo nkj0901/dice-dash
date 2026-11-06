@@ -10,12 +10,31 @@
 
 var CHANNEL_PREFIX = 'dice-dash:';
 
-// 내 아이디
-var g_myId = '';
-if (window.crypto && window.crypto.randomUUID) {
-  g_myId = window.crypto.randomUUID();
-} else {
-  g_myId = 'p-' + new Date().getTime().toString(36) + Math.random().toString(36).slice(2);
+// 내 아이디. 탭마다 sessionStorage에 저장해서 새로고침해도 같은 사람으로 다시 들어올 수 있게 함
+var ID_KEY = 'diceDash.myId';
+var ROOM_KEY = 'diceDash.room';       // 마지막으로 들어가 있던 방 {code, nick} - 새로고침 시 자동 재입장
+var LEAVE_GRACE_MS = 8000;            // presence가 빠져도 이만큼은 기다렸다가 탈락 처리 (새로고침·잠깐 끊김)
+var JOIN_TIMEOUT_MS = 6000;
+var RESUME_TIMEOUT_MS = 12000;        // 자동 재입장은 방장 승계를 기다릴 수 있게 더 길게
+
+function net_storeGet(key) {
+  try { return window.sessionStorage.getItem(key); } catch (e) { return null; }
+}
+function net_storeSet(key, val) {
+  try {
+    if (val == null) window.sessionStorage.removeItem(key);
+    else window.sessionStorage.setItem(key, val);
+  } catch (e) { /* 저장 못 해도 게임은 됨 */ }
+}
+
+var g_myId = net_storeGet(ID_KEY) || '';
+if (g_myId == '') {
+  if (window.crypto && window.crypto.randomUUID) {
+    g_myId = window.crypto.randomUUID();
+  } else {
+    g_myId = 'p-' + new Date().getTime().toString(36) + Math.random().toString(36).slice(2);
+  }
+  net_storeSet(ID_KEY, g_myId);
 }
 
 var g_sb = null;
@@ -33,6 +52,8 @@ var g_readyMode = '';     // 'create' / 'join'
 var g_createNick = '';
 var g_createCode = '';
 var flag = false;         // ??
+var g_leaveTimers = {};   // id -> 탈락 처리 예약 타이머 (유예 중)
+var g_bResuming = false;  // 새로고침 후 자동 재입장 중
 
 // 초기화
 if (window.DICE_CONFIG && window.DICE_CONFIG.supabaseUrl && window.DICE_CONFIG.supabaseKey && window.supabase) {
@@ -44,7 +65,7 @@ if (window.DICE_CONFIG && window.DICE_CONFIG.supabaseUrl && window.DICE_CONFIG.s
 
 // 방장일때 game_logic.js 에서 호출함
 function net_hostOut(to, ev, data) {
-  net_rawSend('s2c', { to: to, event: ev, payload: data });
+  net_rawSend('s2c', { from: g_myId, to: to, event: ev, payload: data });
 }
 
 function net_rawSend(ev, data) {
@@ -66,6 +87,8 @@ function net_clearJoin() {
 // 채널 닫기
 function net_close() {
   net_clearJoin();
+  for (var id in g_leaveTimers) clearTimeout(g_leaveTimers[id]);
+  g_leaveTimers = {};
   g_hostRoom = null;
   g_lastState = null;
   if (g_channel == null) return;
@@ -80,19 +103,39 @@ function net_close() {
 }
 
 // 서버(방장)한테서 온 메세지
+// 방장이 보낸 메세지인지 확인 (이슈 #1-2: 방장 아닌 사람이 가짜 방 상태를 보내는 것 막기)
+// - 평소엔 지금 방장(g_lastState.hostId)이 보낸 것만 받음
+// - 방장이 바뀌는 건, 기존 방장이 presence에서 빠졌고 새 상태의 hostId가 보낸 사람일 때만 인정
+// ※ from 값 자체는 보내는 쪽이 적는 것이라 완전한 인증은 아님 (Supabase 인증 + 비공개 채널 필요)
+function net_isFromHost(msg) {
+  if (typeof msg.from != 'string' || msg.from == '') return false;
+  if (g_lastState == null) {
+    // 처음 입장할 때: 상태에 적힌 방장이 직접 보낸 것만
+    return msg.event != 'room:state' || (msg.payload && msg.payload.hostId == msg.from);
+  }
+  if (msg.from == g_lastState.hostId) return true;
+  if (msg.event != 'room:state' || !msg.payload || msg.payload.hostId != msg.from) return false;
+  var present = g_channel ? g_channel.presenceState() : {};
+  return !present[g_lastState.hostId];
+}
+
 function net_onS2C(msg) {
   if (!msg) return;
   if (msg.to && msg.to != g_myId) return;
+  if (!net_isFromHost(msg)) return;
   var ev = msg.event;
   var data = msg.payload;
   if (ev == 'room:state') {
+    if (!data || !data.members) return;
     var bMember = false;
     for (var i = 0; i < data.members.length; i++) {
       if (data.members[i].id == g_myId) bMember = true;
     }
     if (!bMember) return;
     net_clearJoin();
+    g_bResuming = false;
     g_lastState = data;
+    net_storeSet(ROOM_KEY, JSON.stringify({ code: data.code, nick: net_myNick(data) }));
     ui_onRoomState(data);
   } else if (ev == 'game:events') {
     if (!g_lastState) return;
@@ -101,11 +144,33 @@ function net_onS2C(msg) {
     if (g_bJoining) {
       // 입장 거절됨
       net_close();
+      net_storeSet(ROOM_KEY, null);
+      g_bResuming = false;
     }
     ui_onError(data.message);
   } else if (ev == 'room:left') {
+    net_storeSet(ROOM_KEY, null);
     ui_onRoomLeft();
   }
+}
+
+function net_myNick(state) {
+  for (var i = 0; i < state.members.length; i++) {
+    if (state.members[i].id == g_myId) return state.members[i].nickname;
+  }
+  return '';
+}
+
+// 방장일 때: presence에서 빠진 사람을 바로 탈락시키지 않고 LEAVE_GRACE_MS 기다림.
+// 그 사이 같은 id로 돌아오면(새로고침·잠깐 끊김) 취소된다 (presence sync 핸들러 참고).
+function net_scheduleRemove(id) {
+  if (id == g_myId || g_leaveTimers[id]) return;
+  g_leaveTimers[id] = setTimeout(function () {
+    delete g_leaveTimers[id];
+    if (!g_hostRoom || !g_channel) return;
+    if (g_channel.presenceState()[id]) return; // 돌아옴
+    host_removeMember(id, false);
+  }, LEAVE_GRACE_MS);
 }
 
 // 누가 나감
@@ -113,9 +178,7 @@ function net_onLeave(goneArr) {
   var i;
   if (!g_lastState) return;
   if (g_hostRoom) {
-    for (i = 0; i < goneArr.length; i++) {
-      if (goneArr[i] != g_myId) host_removeMember(goneArr[i], false);
-    }
+    for (i = 0; i < goneArr.length; i++) net_scheduleRemove(goneArr[i]);
     return;
   }
   var oldHost = g_lastState.hostId;
@@ -141,11 +204,10 @@ function net_onLeave(goneArr) {
     }
   }
   if (next == null || next.id != g_myId) return;
+  // 방은 바로 이어받되, 나간 사람(이전 방장 포함)은 유예 후에 탈락 처리
   host_takeOver(g_lastState, g_myId);
-  for (i = 0; i < goneArr.length; i++) {
-    host_removeMember(goneArr[i], true);
-  }
   host_sendAll();
+  for (i = 0; i < goneArr.length; i++) net_scheduleRemove(goneArr[i]);
 }
 
 // 채널 열기
@@ -173,6 +235,11 @@ function net_open(code, mode) {
     var k;
     for (k in st) {
       g_seenTbl[k] = true;
+      // 유예 중에 돌아왔으면 탈락 예약 취소
+      if (g_leaveTimers[k]) {
+        clearTimeout(g_leaveTimers[k]);
+        delete g_leaveTimers[k];
+      }
     }
     var gone = [];
     for (k in g_seenTbl) {
@@ -201,9 +268,12 @@ function net_open(code, mode) {
       var wasJoining = g_bJoining;
       net_close();
       if (wasJoining) {
+        g_bResuming = false;
         ui_onError('실시간 서버에 연결하지 못했습니다. 잠시 후 다시 시도해 주세요.');
       } else if (hadRoom) {
         ui_onDisconnect();
+        // 한 번 자동으로 다시 들어가 봄 (유예 시간 안이면 그대로 이어서 플레이)
+        setTimeout(net_resume, 1500);
       }
     }
   });
@@ -265,11 +335,27 @@ function net_afterJoin() {
   g_joinRetryTimer = setInterval(function () {
     net_rawSend('c2s', { from: g_myId, event: 'room:join', payload: { nickname: g_joinNick, code: g_joinCode } });
   }, 2000);
-  // 3초 지나면 없는방
+  // 방장 응답이 없으면 포기 (일반 입장 6초, 자동 재입장은 방장 승계를 기다려 12초)
+  // 방 코드가 틀렸는지 방장 연결이 느린지는 구분할 수 없어서 메세지를 둘 다 열어둠
+  var bResume = g_bResuming;
   g_joinTimeoutTimer = setTimeout(function () {
     net_close();
-    ui_onError('존재하지 않는 방 코드입니다.');
-  }, 6000);
+    g_bResuming = false;
+    net_storeSet(ROOM_KEY, null);
+    if (bResume) ui_onError('이전 방에 다시 연결하지 못했습니다. 방이 끝났을 수 있어요.');
+    else ui_onError('방을 찾지 못했습니다. 방 코드를 확인하거나 잠시 후 다시 시도해 주세요.');
+  }, bResume ? RESUME_TIMEOUT_MS : JOIN_TIMEOUT_MS);
+}
+
+/* 새로고침·연결 끊김 뒤 마지막 방에 자동으로 다시 들어가기. 시도했으면 true */
+function net_resume() {
+  if (g_sb == null || g_channel != null) return false;
+  var saved = null;
+  try { saved = JSON.parse(net_storeGet(ROOM_KEY) || 'null'); } catch (e) { saved = null; }
+  if (!saved || typeof saved.code != 'string' || typeof saved.nick != 'string') return false;
+  g_bResuming = true;
+  net_joinRoom(saved.nick, saved.code);
+  return g_channel != null;
 }
 
 /* 나가기 */
@@ -278,7 +364,11 @@ function net_leaveRoom() {
     ui_onError('Supabase 설정(config.js)이 없습니다.');
     return;
   }
+  // 직접 나가면 자동 재입장 정보는 지움
+  net_storeSet(ROOM_KEY, null);
+  // 방장이 아니면 바로 탈락 처리되도록 알림 (안 그러면 유예 시간만큼 기다림)
   // 방장이 나가면 남은사람이 알아서 이어받음
+  if (g_lastState && !g_hostRoom) net_rawSend('c2s', { from: g_myId, event: 'room:leave', payload: {} });
   net_close();
   ui_onRoomLeft();
 }
