@@ -22,6 +22,7 @@ var g_diceTimer = null;
 var COLS = 12;              // 보드 격자 크기 (drawBoard에서 화면 방향에 맞춰 다시 정함)
 var ROWS = 8;
 var temp1, temp2; // 쓰는곳 있음
+var g_hopId = null;         // 지금 칸을 건너뛰며 이동 중인 플레이어
 
 var CELL_ICON = {
   start: '🚩', finish: '🏁', normal: '', boost: '🚀', trap: '🕳',
@@ -147,7 +148,7 @@ function drawLobby() {
   for (var i = 0; i < g_room.members.length; i++) {
     var m = g_room.members[i];
     html += '<li>';
-    html += '<span class="dot" style="background:' + m.color + '"></span>';
+    html += charHtml(m.color, 'mini');
     html += '<span style="flex:1">' + escHtml(m.nickname) + '</span>';
     if (m.id == g_room.hostId) html += '<span class="tag host">방장</span>';
     if (m.id == g_myId) html += '<span class="tag">나</span>';
@@ -172,6 +173,19 @@ function drawLobby() {
 }
 
 /*===================== 게임화면 =====================*/
+
+// 플레이어 캐릭터 (동글동글한 말랑이). 색깔마다 귀/장식이 다름.
+// 장식 종류는 COLOR_LIST(game_logic.js) 순서에 맞춰 고정 → 대기실·보드·순위표에서 같은 모습.
+var CHAR_KINDS = ['cat', 'bunny', 'bear', 'sprout', 'antenna', 'chick', 'horn', 'bow'];
+function charHtml(color, extraCls, title) {
+  var idx = COLOR_LIST.indexOf(color);
+  if (idx < 0) idx = 0;
+  var kind = CHAR_KINDS[idx % CHAR_KINDS.length];
+  var html = '<div class="char k-' + kind + (extraCls ? ' ' + extraCls : '') + '" style="--c:' + color + '"';
+  if (title) html += ' title="' + escHtml(title) + '"';
+  html += '><span class="face"></span></div>';
+  return html;
+}
 
 // 보드 격자 크기 정하기: 칸 수(n)가 둘레(2*(가로+세로)-4)를 채우도록.
 // 가로 화면은 넓게(36칸 → 12x8), 세로 화면은 길게(36칸 → 7x13).
@@ -224,11 +238,10 @@ function drawBoard() {
       var pos = p.position;
       if (g_displayPos[p.id] != undefined) pos = g_displayPos[p.id];
       if (p.alive && pos == i) {
-        // 첫글자 (이모지 땜빵)
-        var first = p.nickname.charAt(0);
-        var cc = p.nickname.charCodeAt(0);
-        if (cc >= 0xD800 && cc <= 0xDBFF) first = p.nickname.substr(0, 2);
-        html += '<div class="token' + (p.id == turnId ? ' current' : '') + '" title="' + escHtml(p.nickname) + '" style="background:' + p.color + '">' + escHtml(first) + '</div>';
+        var cls = 'token';
+        if (p.id == g_hopId) cls += ' hop';          // 한 칸씩 이동 중
+        else if (p.id == turnId) cls += ' current';  // 내 차례 - 제자리 콩콩
+        html += charHtml(p.color, cls, p.nickname);
       }
     }
     html += '</div></div>';
@@ -248,7 +261,7 @@ function drawPlayers() {
     cls = cls + ' ';
     if (!p.alive) cls = cls + 'out';
     html += '<li class="' + cls + '">';
-    html += '<span class="dot" style="background:' + p.color + '"></span>';
+    html += charHtml(p.color, 'mini');
     html += '<span class="pname">' + escHtml(p.nickname) + (p.id == g_myId ? ' (나)' : '') + '</span>';
     if (p.resting) html += '<span title="다음 턴 쉼">💤</span>';
     var itemStr = '';
@@ -382,7 +395,7 @@ function drawResult() {
   for (var i = 0; i < r.length; i++) {
     html += '<li class="' + (r[i].rank == 1 ? 'first' : '') + '">';
     html += '<span class="rank">' + (r[i].rank ? r[i].rank + '위' : '-') + '</span>';
-    html += '<span class="dot" style="background:' + r[i].color + '"></span>';
+    html += charHtml(r[i].color, 'mini');
     html += '<span class="pname">' + escHtml(r[i].nickname) + (r[i].rank == 1 ? ' 🏆' : '') + '</span>';
     html += '<span class="ppos">' + (r[i].rank ? r[i].position + '칸' : '탈락') + '</span>';
     html += '</li>';
@@ -526,9 +539,11 @@ function playOneEvent(ev) {
         return;
       }
       if ((step > 0 && temp1 > ev.to) || (step < 0 && temp1 < ev.to)) {
+        g_hopId = null;
         playNext();
         return;
       }
+      g_hopId = p.id;
       g_displayPos[p.id] = temp1;
       drawBoard();
       drawPlayers();
