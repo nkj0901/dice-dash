@@ -63,8 +63,8 @@ function diceHtml(arr) {
 // <html data-skin="..."> 값으로 style.css의 스킨 규칙이 바뀐다. 고른 값은 이 브라우저(localStorage)에만 저장.
 // 칸 그림은 스킨마다 img/<폴더>/ 에서 가져온다 (기본 스킨은 img/ 바로 아래).
 var SKINS = [
-  { id: 'classic', name: '✨ 기본', imgDir: 'img/' },
-  { id: 'xmas', name: '🎄 크리스마스', imgDir: 'img/xmas/' }
+  { id: 'classic', name: '기본', imgDir: 'img/' },
+  { id: 'xmas', name: '크리스마스', imgDir: 'img/xmas/' }
 ];
 var SKIN_KEY = 'dice-dash-skin';
 function skin_find(id) {
@@ -108,6 +108,28 @@ function skin_fillSelects() {
     sels[i].innerHTML = html;
     sels[i].value = cur;
   }
+}
+// 이모티콘 → 일러스트 그림. 게임 로그·배너 문장(game_logic.js가 만든 글)에 섞인 이모티콘도 바꾼다.
+// 칸 종류와 같은 그림은 스킨을 따라가고(cellArtSrc), 나머지는 img/ico/.
+var ICON_ART = [
+  ['🎲', 'ico:dice'], ['🛡', 'ico:shield'], ['🎯', 'ico:target'], ['❌', 'ico:out'], ['🏆', 'ico:trophy'],
+  ['🚀', 'cell:boost'], ['🕳', 'cell:trap'], ['💤', 'cell:rest'], ['🔁', 'cell:reroll'],
+  ['🎁', 'cell:item'], ['🔀', 'cell:swap'], ['🏁', 'cell:finish'], ['🚩', 'cell:start']
+];
+function iconSrc(ref) {
+  var a = ref.split(':');
+  if (a[0] == 'cell') return cellArtSrc(a[1]);
+  return 'img/ico/' + a[1] + '.svg';
+}
+// html: 이미 escHtml 처리된 문자열
+function iconize(html) {
+  if (html == null) return '';
+  html = String(html);
+  for (var i = 0; i < ICON_ART.length; i++) {
+    var img = '<img class="ico" src="' + iconSrc(ICON_ART[i][1]) + '" alt="">';
+    html = html.split(ICON_ART[i][0] + '\uFE0F').join(img).split(ICON_ART[i][0]).join(img);
+  }
+  return html;
 }
 function cellArtSrc(type) {
   var s = skin_find(skin_get());
@@ -267,17 +289,146 @@ function drawLobby() {
 
 /*===================== 게임화면 =====================*/
 
-// 플레이어 캐릭터 (동글동글한 말랑이). 색깔마다 귀/장식이 다름.
-// 장식 종류는 COLOR_LIST(game_logic.js) 순서에 맞춰 고정 → 대기실·보드·순위표에서 같은 모습.
-var CHAR_KINDS = ['cat', 'bunny', 'bear', 'sprout', 'antenna', 'chick', 'horn', 'bow'];
+// 플레이어 캐릭터: 동물 친구들 (일러스트 SVG). 목에 두른 스카프(.acc)가 플레이어 색.
+// 종류는 COLOR_LIST(game_logic.js) 순서에 맞춰 고정 → 대기실·보드·순위표에서 같은 모습.
+var CHAR_KINDS = ['maltese', 'shiba', 'poodle', 'corgi', 'cat', 'bunny', 'bear', 'hamster'];
+var CHAR_LINE = '#4a3044';   // 외곽선 색
+
+// 몽글몽글한 털 뭉치: 원 여러 개를 겹쳐 바깥쪽만 외곽선이 보이게
+function svgCloud(circles, fill) {
+  var a = '', b = '';
+  for (var i = 0; i < circles.length; i++) {
+    var c = circles[i];
+    a += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="' + (c[2] + 2.2) + '" fill="' + CHAR_LINE + '"/>';
+    b += '<circle cx="' + c[0] + '" cy="' + c[1] + '" r="' + c[2] + '" fill="' + fill + '"/>';
+  }
+  return a + b;
+}
+function svgHead(fill) {
+  return '<ellipse cx="32" cy="41" rx="19" ry="17" fill="' + fill + '"/>';
+}
+function svgHeadLine() {
+  return '<ellipse cx="32" cy="41" rx="19" ry="17" fill="none" stroke="' + CHAR_LINE + '" stroke-width="2.4"/>';
+}
+// 반짝이는 눈 + 볼터치 + 코·입. nose: 'dog' 까만 코, 'pink' 작은 분홍 코
+function svgFace(nose) {
+  var L = CHAR_LINE;
+  var h = '';
+  h += '<ellipse cx="19" cy="48" rx="4.2" ry="2.6" fill="#ff8fab" opacity=".65"/>';
+  h += '<ellipse cx="45" cy="48" rx="4.2" ry="2.6" fill="#ff8fab" opacity=".65"/>';
+  h += '<ellipse cx="24.5" cy="41" rx="3.1" ry="3.7" fill="#2a1d2e"/><circle cx="25.7" cy="39.6" r="1.3" fill="#fff"/><circle cx="23.6" cy="42.6" r=".6" fill="#fff"/>';
+  h += '<ellipse cx="39.5" cy="41" rx="3.1" ry="3.7" fill="#2a1d2e"/><circle cx="40.7" cy="39.6" r="1.3" fill="#fff"/><circle cx="38.6" cy="42.6" r=".6" fill="#fff"/>';
+  if (nose == 'dog') {
+    h += '<ellipse cx="32" cy="46" rx="3.2" ry="2.3" fill="#2a1d2e"/><ellipse cx="31" cy="45.3" rx="1" ry=".6" fill="#fff" opacity=".8"/>';
+  } else {
+    h += '<path d="M30 45.2 h4 l-2 2.4z" fill="#ff7a9a" stroke="' + L + '" stroke-width="1" stroke-linejoin="round"/>';
+  }
+  h += '<path d="M28.4 48.8 Q30.2 51 32 48.8 Q33.8 51 35.6 48.8" fill="none" stroke="' + L + '" stroke-width="1.6" stroke-linecap="round"/>';
+  return h;
+}
+// 목에 두른 스카프 (플레이어 색)
+function svgScarf() {
+  var L = CHAR_LINE;
+  return '<path class="acc" d="M15 55 Q32 64 49 55 L48.5 60.5 Q32 69 15.5 60.5Z" stroke="' + L + '" stroke-width="2" stroke-linejoin="round"/>' +
+    '<path class="acc" d="M41 59 L47 66 L39 65Z" stroke="' + L + '" stroke-width="2" stroke-linejoin="round"/>' +
+    '<path d="M19 58 Q32 64 45 58" fill="none" stroke="#fff" stroke-width="1.4" stroke-dasharray="2 3" opacity=".7"/>';
+}
+function svgEar(points, fill, inner, innerFill) {
+  var L = CHAR_LINE;
+  var h = '<polygon points="' + points + '" fill="' + fill + '" stroke="' + L + '" stroke-width="2.4" stroke-linejoin="round"/>';
+  if (inner) h += '<polygon points="' + inner + '" fill="' + innerFill + '"/>';
+  return h;
+}
+
+var CHAR_PARTS = {
+  // 몰티즈: 하얀 솜뭉치 + 머리 위 리본(플레이어 색)
+  maltese: function () {
+    var L = CHAR_LINE;
+    return svgCloud([[14, 43, 8], [13, 53, 7], [50, 43, 8], [51, 53, 7]], '#f8efe4') +
+      svgCloud([[32, 41, 17], [22, 29, 7], [32, 26, 8], [42, 29, 7], [20, 47, 8], [44, 47, 8], [32, 51, 9]], '#ffffff') +
+      svgScarf() + svgFace('dog') +
+      '<path class="acc" d="M42 24 L34 18 L35 29Z M42 24 L50 18 L49 29Z" stroke="' + L + '" stroke-width="1.8" stroke-linejoin="round"/>' +
+      '<circle class="acc" cx="42" cy="24" r="2.8" stroke="' + L + '" stroke-width="1.8"/>';
+  },
+  // 시바: 뾰족 귀 + 하얀 볼
+  shiba: function () {
+    return svgEar('13,33 17,9 30,24', '#f0a050', '17,28 19,16 26,24', '#ffe2c4') +
+      svgEar('51,33 47,9 34,24', '#f0a050', '47,28 45,16 38,24', '#ffe2c4') +
+      svgHead('#f0a050') +
+      '<path d="M13 45 Q20 38 32 44 Q44 38 51 45 Q49 58 32 58 Q15 58 13 45Z" fill="#fff8ef"/>' +
+      '<ellipse cx="24" cy="33.5" rx="2.6" ry="1.6" fill="#fff8ef"/><ellipse cx="40" cy="33.5" rx="2.6" ry="1.6" fill="#fff8ef"/>' +
+      svgHeadLine() + svgScarf() + svgFace('dog');
+  },
+  // 푸들: 곱슬곱슬 살구색
+  poodle: function () {
+    return svgCloud([[14, 41, 7], [13, 50, 7], [15, 58, 6], [50, 41, 7], [51, 50, 7], [49, 58, 6]], '#dea070') +
+      svgCloud([[32, 42, 16], [23, 28, 7], [32, 23, 8], [41, 28, 7]], '#ebb684') +
+      '<ellipse cx="32" cy="48" rx="8" ry="6" fill="#f8d6b6"/>' +
+      svgScarf() + svgFace('dog');
+  },
+  // 웰시코기: 커다란 귀 + 이마의 하얀 줄
+  corgi: function () {
+    return svgEar('9,34 13,4 30,25', '#f29b4b', '14,29 15,13 25,25', '#ffc9b0') +
+      svgEar('55,34 51,4 34,25', '#f29b4b', '50,29 49,13 39,25', '#ffc9b0') +
+      svgHead('#f29b4b') +
+      '<path d="M29 25 Q32 23 35 25 L37 39 Q45 42 47 51 Q41 58 32 58 Q23 58 17 51 Q19 42 27 39Z" fill="#fffaf2"/>' +
+      svgHeadLine() + svgScarf() + svgFace('dog');
+  },
+  // 고양이: 회색 줄무늬 + 수염
+  cat: function () {
+    var L = CHAR_LINE;
+    return svgEar('13,34 16,11 29,25', '#c4c0d6', '17,29 18,17 25,25', '#ffc4d0') +
+      svgEar('51,34 48,11 35,25', '#c4c0d6', '47,29 46,17 39,25', '#ffc4d0') +
+      svgHead('#cfcbe0') +
+      '<path d="M28 26 v5 M32 25 v6 M36 26 v5" stroke="#a29dbb" stroke-width="2.4" stroke-linecap="round"/>' +
+      '<ellipse cx="32" cy="48" rx="8.5" ry="5.5" fill="#f6f4fb"/>' +
+      svgHeadLine() + svgScarf() + svgFace('pink') +
+      '<path d="M11 45 h7 M11 49.5 l7 -1.2 M53 45 h-7 M53 49.5 l-7 -1.2" stroke="' + L + '" stroke-width="1.3" stroke-linecap="round"/>';
+  },
+  // 토끼: 긴 귀
+  bunny: function () {
+    var L = CHAR_LINE;
+    return '<ellipse cx="24" cy="15" rx="5.8" ry="14" transform="rotate(-10 24 15)" fill="#ffffff" stroke="' + L + '" stroke-width="2.4"/>' +
+      '<ellipse cx="24" cy="16" rx="2.6" ry="9.5" transform="rotate(-10 24 16)" fill="#ffc4d0"/>' +
+      '<ellipse cx="40" cy="15" rx="5.8" ry="14" transform="rotate(10 40 15)" fill="#ffffff" stroke="' + L + '" stroke-width="2.4"/>' +
+      '<ellipse cx="40" cy="16" rx="2.6" ry="9.5" transform="rotate(10 40 16)" fill="#ffc4d0"/>' +
+      svgHead('#ffffff') + svgHeadLine() + svgScarf() + svgFace('pink');
+  },
+  // 곰: 동그란 귀 + 밝은 주둥이
+  bear: function () {
+    var L = CHAR_LINE;
+    return '<circle cx="16" cy="27" r="7" fill="#b5774a" stroke="' + L + '" stroke-width="2.4"/><circle cx="16" cy="27" r="3.6" fill="#f1c9a0"/>' +
+      '<circle cx="48" cy="27" r="7" fill="#b5774a" stroke="' + L + '" stroke-width="2.4"/><circle cx="48" cy="27" r="3.6" fill="#f1c9a0"/>' +
+      svgHead('#b5774a') +
+      '<ellipse cx="32" cy="48" rx="9" ry="6.5" fill="#f3d4b0"/>' +
+      svgHeadLine() + svgScarf() + svgFace('dog');
+  },
+  // 햄스터: 통통한 볼
+  hamster: function () {
+    var L = CHAR_LINE;
+    return '<circle cx="18" cy="27" r="5.5" fill="#f2b25c" stroke="' + L + '" stroke-width="2.4"/><circle cx="18" cy="27" r="2.8" fill="#ffc4d0"/>' +
+      '<circle cx="46" cy="27" r="5.5" fill="#f2b25c" stroke="' + L + '" stroke-width="2.4"/><circle cx="46" cy="27" r="2.8" fill="#ffc4d0"/>' +
+      svgHead('#f2b25c') +
+      '<path d="M13 43 Q32 35 51 43 Q51 58 32 58 Q13 58 13 43Z" fill="#fffaf0"/>' +
+      svgHeadLine() + svgScarf() + svgFace('pink') +
+      '<ellipse cx="18" cy="49" rx="5.5" ry="3.6" fill="#ff8fab" opacity=".45"/><ellipse cx="46" cy="49" rx="5.5" ry="3.6" fill="#ff8fab" opacity=".45"/>';
+  }
+};
+var g_charSvgCache = {};
+function charSvg(kind) {
+  if (!g_charSvgCache[kind]) {
+    g_charSvgCache[kind] = '<svg viewBox="0 0 64 68" aria-hidden="true">' + CHAR_PARTS[kind]() + '</svg>';
+  }
+  return g_charSvgCache[kind];
+}
 function charHtml(color, extraCls, title) {
   color = safeColor(color);
   var idx = COLOR_LIST.indexOf(color);
   if (idx < 0) idx = 0;
   var kind = CHAR_KINDS[idx % CHAR_KINDS.length];
-  var html = '<div class="char k-' + kind + (extraCls ? ' ' + extraCls : '') + '" style="--c:' + color + '"';
+  var html = '<div class="char pet-' + kind + (extraCls ? ' ' + extraCls : '') + '" style="--c:' + color + '"';
   if (title) html += ' title="' + escHtml(title) + '"';
-  html += '><span class="face"></span><span class="hat"></span></div>';  // hat: 크리스마스 스킨의 산타 모자
+  html += '>' + charSvg(kind) + '<span class="hat"></span></div>';  // hat: 크리스마스 스킨의 산타 모자
   return html;
 }
 
@@ -358,12 +509,12 @@ function drawPlayers() {
     html += '<li class="' + cls + '">';
     html += charHtml(p.color, 'mini');
     html += '<span class="pname">' + escHtml(p.nickname) + (p.id == g_myId ? ' (나)' : '') + '</span>';
-    if (p.resting) html += '<span title="다음 턴 쉼">💤</span>';
+    if (p.resting) html += '<span title="다음 턴 쉼">' + iconize('💤') + '</span>';
     var itemStr = '';
     for (var k = 0; k < p.items.length; k++) {
       if (k > 0) itemStr += ' ';
       if (safeItem(p.items[k]) == null) continue;
-      itemStr += ITEM_ICON[p.items[k]];
+      itemStr += iconize(ITEM_ICON[p.items[k]]);
     }
     html += '<span class="pitems">' + itemStr + '</span>';
     var pos = safeNum(p.position);
@@ -377,7 +528,7 @@ function drawPlayers() {
 function drawLog() {
   var html = '';
   for (var i = 0; i < g_room.game.log.length; i++) {
-    html += '<li>' + escHtml(g_room.game.log[i]) + '</li>';
+    html += '<li>' + iconize(escHtml(g_room.game.log[i])) + '</li>';
   }
   var log = document.getElementById('log');
   log.innerHTML = html;
@@ -398,7 +549,7 @@ function drawControls() {
     ind.innerHTML = '게임 종료';
     ind.className = 'turn-indicator';
   } else if (myTurn) {
-    ind.innerHTML = '🎯 내 차례!';
+    ind.innerHTML = iconize('🎯') + ' 내 차례!';
     ind.className = 'turn-indicator mine';
   } else {
     ind.innerHTML = '▶ ' + escHtml(cur.nickname) + '님 차례';
@@ -418,7 +569,7 @@ function drawControls() {
     if (g.pending.adjust > 0) pend += '🎯 조정 +1';
     else pend += '🎯 조정 -1';
   }
-  if (playing && pend != '') document.getElementById('pending').innerHTML = '적용 중: ' + pend;
+  if (playing && pend != '') document.getElementById('pending').innerHTML = '적용 중: ' + iconize(pend);
   else document.getElementById('pending').innerHTML = '';
 
   var me = null;
@@ -436,13 +587,13 @@ function drawControls() {
 
   var html = '';
   if (items.length == 0) {
-    html = '<span class="empty">없음 — 🎁 칸에서 획득</span>';
+    html = '<span class="empty">없음 — ' + iconize('🎁') + ' 칸에서 획득</span>';
   } else {
     for (var k = 0; k < items.length; k++) {
       var key = items[k] + ':' + k;
       html += '<button class="item-chip' + (g_selItem == key ? ' selected' : '') + '" title="' + ITEM_DESC[items[k]] + '"';
       html += ' onclick="itemChip_Click(\'' + key + '\')"' + (canUseItem ? '' : ' disabled') + '>';
-      html += ITEM_ICON[items[k]] + ' ' + ITEM_NAME[items[k]] + '</button>';
+      html += iconize(ITEM_ICON[items[k]]) + ' ' + ITEM_NAME[items[k]] + '</button>';
     }
   }
   document.getElementById('my-items').innerHTML = html;
@@ -497,7 +648,7 @@ function drawResult() {
     html += '<li class="' + (rank == 1 ? 'first' : '') + '">';
     html += '<span class="rank">' + (rank ? rank + '위' : '-') + '</span>';
     html += charHtml(r[i].color, 'mini');
-    html += '<span class="pname">' + escHtml(r[i].nickname) + (rank == 1 ? ' 🏆' : '') + '</span>';
+    html += '<span class="pname">' + escHtml(r[i].nickname) + (rank == 1 ? ' ' + iconize('🏆') : '') + '</span>';
     html += '<span class="ppos">' + (rank ? safeNum(r[i].position) + '칸' : '탈락') + '</span>';
     html += '</li>';
   }
@@ -605,7 +756,7 @@ function playOneEvent(ev) {
       clearInterval(g_diceTimer);
       dice.className = 'dice landed';
       dice.innerHTML = diceHtml(ev.dice);
-      document.getElementById('banner').innerHTML = escHtml(ev.text);
+      document.getElementById('banner').innerHTML = iconize(escHtml(ev.text));
       setTimeout(playNext, 350);
     }, 70);
   } else if (ev.type == 'move') {
@@ -646,13 +797,13 @@ function playOneEvent(ev) {
     moveStep();
   } else if (ev.type == 'cell') {
     flashCell(ev.position);
-    document.getElementById('banner').innerHTML = escHtml(ev.text);
+    document.getElementById('banner').innerHTML = iconize(escHtml(ev.text));
     setTimeout(playNext, 700);
   } else if (ev.type == 'item') {
-    document.getElementById('banner').innerHTML = escHtml(ev.text);
+    document.getElementById('banner').innerHTML = iconize(escHtml(ev.text));
     setTimeout(playNext, 300);
   } else if (ev.type == 'win') {
-    document.getElementById('banner').innerHTML = escHtml(ev.text);
+    document.getElementById('banner').innerHTML = iconize(escHtml(ev.text));
     setTimeout(playNext, 900);
   } else {
     playNext();

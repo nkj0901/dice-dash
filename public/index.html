@@ -23,7 +23,7 @@
   <!-- 1. 입장 화면 -->
   <section id="screen-entry" class="screen active">
     <div class="card entry">
-      <h1 class="logo">🎲 <span class="logo-text">다이스 대시</span></h1>
+      <h1 class="logo"><img class="ico logo-ico" src="img/ico/dice.svg" alt=""> <span class="logo-text">다이스 대시</span></h1>
       <p class="sub">2~8명이 방 코드로 모여 함께 달리는 주사위 레이스</p>
       <label class="field">
         <span>닉네임</span>
@@ -69,7 +69,7 @@
   <!-- 3. 게임 화면 -->
   <section id="screen-game" class="screen">
     <header class="game-head">
-      <div class="logo small">🎲 <span class="logo-text">다이스 대시</span></div>
+      <div class="logo small"><img class="ico logo-ico" src="img/ico/dice.svg" alt=""> <span class="logo-text">다이스 대시</span></div>
       <div id="turn-indicator" class="turn-indicator"></div>
       <div class="head-right">
         <select class="skin-select" onchange="skin_set(this.value)" aria-label="스킨 고르기"></select>
@@ -91,7 +91,7 @@
         <div class="items-label">내 아이템 <small>(굴리기 전에 사용, 턴당 1장)</small></div>
         <div id="my-items" class="my-items"></div>
         <div id="item-confirm" class="item-confirm"></div>
-        <button id="btn-roll" class="btn primary wide big" onclick="btnRoll_Click()">🎲 주사위 굴리기</button>
+        <button id="btn-roll" class="btn primary wide big" onclick="btnRoll_Click()"><img class="ico" src="img/ico/dice.svg" alt=""> 주사위 굴리기</button>
       </div>
       <div class="panel">
         <h3>이벤트 로그</h3>
@@ -104,7 +104,7 @@
     <!-- <div id="result_old" style="display:none"><table border="1" width="100%"><tr><td>순위</td><td>이름</td></tr></table></div> -->
     <div id="result" class="overlay hidden">
       <div class="card result">
-        <h2>🏁 게임 종료</h2>
+        <h2><img class="ico big" src="img/ico/trophy.svg" alt=""> 게임 종료</h2>
         <ol id="rankings" class="rankings"></ol>
         <div class="result-actions">
           <button id="btn-restart" class="btn primary" onclick="net_send('game:restart')">다시 하기</button>

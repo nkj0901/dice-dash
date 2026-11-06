@@ -233,8 +233,8 @@ input:focus { border-color: var(--accent); }
   animation: sheen 3.2s ease-in-out infinite;
 }
 
-/* ===== 플레이어 캐릭터: 동글동글 말랑이 =====
-   몸통 색은 --c, 귀·장식은 k-* 클래스(main.js charHtml). 크기는 --s 하나로 조절. */
+/* ===== 플레이어 캐릭터: 동물 친구들 (main.js charHtml의 SVG) =====
+   스카프·리본 색은 --c, 크기는 --s 하나로 조절. */
 .char {
   --s: 42px;
   position: relative; flex: none; isolation: isolate;
@@ -247,90 +247,6 @@ input:focus { border-color: var(--accent); }
   box-shadow: inset 0 -2px 0 rgba(0, 0, 0, 0.18);
   filter: drop-shadow(0 3px 2px rgba(0, 0, 0, 0.45));
 }
-/* 얼굴: 반짝이는 눈 + 볼터치 */
-.char .face {
-  position: absolute; inset: 0; border-radius: inherit;
-  background:
-    radial-gradient(5% 6% at 35% 49%, #fff 60%, transparent 100%),
-    radial-gradient(5% 6% at 64% 49%, #fff 60%, transparent 100%),
-    radial-gradient(10% 13% at 38% 54%, #1d1d2b 85%, transparent 100%),
-    radial-gradient(10% 13% at 66% 54%, #1d1d2b 85%, transparent 100%),
-    radial-gradient(11% 8% at 22% 70%, rgba(255, 105, 140, 0.8) 55%, transparent 100%),
-    radial-gradient(11% 8% at 82% 70%, rgba(255, 105, 140, 0.8) 55%, transparent 100%);
-}
-/* 입: 작은 웃음 */
-.char .face::after {
-  content: ""; position: absolute; left: 50%; top: 63%;
-  width: 18%; height: 11%; transform: translateX(-50%);
-  border: 2px solid #1d1d2b; border-top: 0; border-radius: 0 0 50% 50% / 0 0 100% 100%;
-  box-sizing: border-box;
-}
-.char::before, .char::after { content: ""; position: absolute; z-index: -1; }
-
-/* 고양이 귀 */
-.char.k-cat::before, .char.k-cat::after {
-  top: -14%; width: 30%; height: 34%; background: var(--c);
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-}
-.char.k-cat::before { left: 6%; transform: rotate(-14deg); }
-.char.k-cat::after { right: 6%; transform: rotate(14deg); }
-/* 토끼 귀 */
-.char.k-bunny::before, .char.k-bunny::after {
-  top: -48%; width: 20%; height: 62%; border-radius: 50%;
-  background: radial-gradient(40% 60% at 50% 45%, rgba(255, 190, 210, 0.85) 60%, transparent 100%), var(--c);
-}
-.char.k-bunny::before { left: 18%; transform: rotate(-10deg); }
-.char.k-bunny::after { right: 18%; transform: rotate(10deg); }
-/* 곰 귀 */
-.char.k-bear::before, .char.k-bear::after {
-  top: -10%; width: 30%; height: 33%; border-radius: 50%;
-  background: radial-gradient(circle at 50% 55%, rgba(0, 0, 0, 0.22) 0 35%, transparent 40%), var(--c);
-}
-.char.k-bear::before { left: 2%; }
-.char.k-bear::after { right: 2%; }
-/* 새싹 */
-.char.k-sprout::before {
-  top: -34%; left: 50%; width: 30%; height: 34%; background: #6fdc6f;
-  border-radius: 0 100% 0 100%; transform: translateX(-10%) rotate(-10deg);
-}
-.char.k-sprout::after {
-  top: -26%; left: 50%; width: 22%; height: 26%; background: #4fbf55;
-  border-radius: 100% 0 100% 0; transform: translateX(-95%) rotate(8deg);
-}
-/* 더듬이 */
-.char.k-antenna::before {
-  top: -32%; left: 50%; width: 7%; height: 36%; background: #1d1d2b;
-  transform: translateX(-50%); border-radius: 2px;
-}
-.char.k-antenna::after {
-  top: -46%; left: 50%; width: 24%; height: 26%; border-radius: 50%;
-  transform: translateX(-50%); background: radial-gradient(circle at 35% 35%, #fff 0 18%, #ffd84a 25%);
-}
-/* 병아리 머리털 + 부리 */
-.char.k-chick::before {
-  top: -22%; left: 50%; width: 34%; height: 30%; background: var(--c);
-  transform: translateX(-50%);
-  clip-path: polygon(0 100%, 15% 10%, 35% 70%, 50% 0, 65% 70%, 85% 10%, 100% 100%);
-}
-.char.k-chick::after {
-  top: 62%; left: 50%; width: 18%; height: 13%; background: #ff9f1c; z-index: 1;
-  transform: translateX(-50%); clip-path: polygon(0 0, 100% 0, 50% 100%);
-}
-.char.k-chick .face::after { display: none; }
-/* 뿔 하나 */
-.char.k-horn::before {
-  top: -36%; left: 50%; width: 22%; height: 42%; transform: translateX(-50%);
-  background: linear-gradient(180deg, #fff6c9, #ffd166);
-  clip-path: polygon(50% 0, 100% 100%, 0 100%);
-}
-/* 리본 */
-.char.k-bow::before, .char.k-bow::after {
-  top: -14%; width: 26%; height: 30%; background: #ff5fa2;
-  clip-path: polygon(0 0, 100% 50%, 0 100%);
-}
-.char.k-bow::before { left: 24%; transform: rotate(-14deg); }
-.char.k-bow::after { left: 47%; transform: scaleX(-1) rotate(-14deg); }
-
 /* 움직임: 차례인 캐릭터는 제자리 콩콩, 이동 중이면 칸마다 폴짝 */
 .char.current {
   animation: hopIdle 0.9s ease-in-out infinite; transform-origin: 50% 100%;
@@ -803,3 +719,37 @@ html[data-skin="xmas"] .result::before {
 }
 /* 결승 칸 줄무늬 위 글자가 잘 보이게 */
 .cell.t-finish .name, .cell.t-finish .num { align-self: flex-start; background: rgba(0, 0, 0, 0.42); border-radius: 999px; padding: 0 6px; }
+
+/* =====================================================================
+   동물 캐릭터 + 일러스트 아이콘
+   ===================================================================== */
+.char {
+  height: calc(var(--s) * 1.06);
+  background: none; border-radius: 0; box-shadow: none;
+}
+.char svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.char .acc { fill: var(--c); }
+.char::before, .char::after { content: none; }
+/* 산타 모자: 동물 머리 위치에 맞춤 */
+html[data-skin="xmas"] .char .hat { left: 19%; top: 6%; width: 62%; height: 34%; transform: rotate(-10deg); }
+
+/* 글 사이에 들어가는 그림 아이콘 (main.js iconize) */
+img.ico {
+  display: inline-block; height: 1.35em; width: auto; vertical-align: -0.32em;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.35));
+}
+img.ico.logo-ico { height: 1.15em; vertical-align: -0.18em; animation: floatLogo 3s ease-in-out infinite; }
+img.ico.big { height: 1.2em; vertical-align: -0.2em; }
+.player-list .pitems img.ico { height: 1.3em; }
+.log img.ico { height: 1.45em; }
+.banner img.ico { height: 1.5em; }
+.item-chip img.ico { height: 1.6em; vertical-align: -0.45em; }
+@keyframes floatLogo { 50% { transform: translateY(-3px) rotate(-6deg); } }
+
+/* 칸 그림: 흰 테두리를 두른 스티커 느낌 */
+.cell .art {
+  filter:
+    drop-shadow(1.5px 0 0 #fff) drop-shadow(-1.5px 0 0 #fff)
+    drop-shadow(0 1.5px 0 #fff) drop-shadow(0 -1.5px 0 #fff)
+    drop-shadow(0 3px 2px rgba(0, 0, 0, 0.35));
+}
