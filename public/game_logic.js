@@ -13,7 +13,7 @@
  * ※ 주의 : 이 파일 수정시 반드시 팀장님께 보고할것
  *****************************************************************/
 
-// 보드 (30칸)
+// 보드 (0~35번, 36칸) - 화면 테두리를 한 바퀴 두름
 var BOARD_DATA = ["start",
   "normal", "item", "boost", "normal", "trap",
   "normal", "reroll", "item", "normal", "boost",
@@ -21,6 +21,7 @@ var BOARD_DATA = ["start",
   "normal", "boost", "trap", "normal", "reroll",
   "normal", "item", "rest", "boost", "normal",
   "trap", "normal", "normal", "normal",
+  "item", "normal", "trap", "normal", "normal",
   "finish"];
 //var BOARD_DATA_OLD = ["start","normal","normal","trap","normal","boost","normal","normal","finish"];
 

@@ -96,36 +96,42 @@ input:focus { border-color: var(--accent); }
 .tag.host { background: var(--accent); color: var(--accent-ink); }
 
 /* 게임 */
-.game-head { width: 100%; max-width: 1240px; display: flex; align-items: center; justify-content: space-between; }
+.game-head { width: 100%; max-width: 1400px; display: flex; align-items: center; justify-content: space-between; }
 .head-right { display: flex; align-items: center; gap: 10px; }
 .room-chip { color: var(--muted); font-size: 13px; }
 .room-chip b { color: var(--text); letter-spacing: 2px; }
 .turn-indicator { font-size: 17px; font-weight: 700; padding: 6px 16px; border-radius: 999px; background: var(--bg2); }
 .turn-indicator.mine { background: var(--accent); color: var(--accent-ink); animation: pulse 1.2s infinite; }
 
-.board {
-  width: 100%; max-width: 1240px;
+/* 보드: 칸이 화면 테두리를 두르고, 가운데에 패널(.game-bottom)이 들어간다.
+   --cols / --rows 는 main.js drawBoard()가 화면 방향에 맞춰 넣는다. */
+.arena {
+  --cols: 12; --rows: 8;
+  width: 100%; max-width: 1400px;
+  flex: 1; min-height: 0;
   display: grid;
-  grid-template-columns: repeat(8, 1fr);
-  grid-template-rows: repeat(4, 76px);
-  gap: 8px;
-  flex: none;
+  grid-template-columns: repeat(var(--cols), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--rows), minmax(0, 1fr));
+  gap: 6px;
   background: rgba(0, 0, 0, 0.15);
-  padding: 12px;
+  padding: 10px;
   border-radius: var(--radius);
 }
+.board { display: contents; }
 .cell {
   position: relative;
+  min-width: 0; min-height: 0;
   background: var(--cell);
   border-radius: 12px;
   border: 2px solid transparent;
   padding: 6px 8px;
   display: flex; flex-direction: column;
+  overflow: hidden;
   transition: border-color 0.2s, box-shadow 0.2s;
 }
 .cell .num { font-size: 11px; color: var(--muted); }
 .cell .icon { font-size: 20px; line-height: 1; margin-top: 2px; }
-.cell .name { font-size: 11px; color: var(--muted); }
+.cell .name { font-size: 11px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .cell .tokens { position: absolute; right: 6px; bottom: 6px; left: 34px; display: flex; flex-wrap: wrap-reverse; justify-content: flex-end; gap: 3px; }
 .token {
   width: 20px; height: 20px; border-radius: 50%;
@@ -148,10 +154,27 @@ input:focus { border-color: var(--accent); }
 .cell.t-swap { background: #5d3168; }
 
 .game-bottom {
-  width: 100%; max-width: 1240px;
-  display: grid; grid-template-columns: 1fr 1.1fr 1fr; gap: 14px;
-  flex: 1; min-height: 0;
+  grid-row: 2 / -2; grid-column: 2 / -2; /* 테두리 칸 안쪽 전체 */
+  display: grid; grid-template-columns: 1fr 1.1fr 1fr; gap: 10px;
+  min-height: 0; min-width: 0;
+  padding: 6px;
 }
+.arena.portrait .game-bottom {
+  grid-template-columns: 1fr; grid-auto-rows: max-content;
+  overflow: auto; padding: 4px;
+}
+.arena.portrait .controls { order: -1; }   /* 세로 화면은 주사위 패널을 맨 위에 */
+.arena.portrait .panel { padding: 10px 12px; }
+.arena.portrait .player-list, .arena.portrait .log { max-height: 180px; }
+
+/* 세로(좁은) 화면의 작은 칸 */
+.arena.portrait { gap: 4px; padding: 6px; }
+.arena.portrait .cell { padding: 3px 4px; border-radius: 8px; }
+.arena.portrait .cell .name { display: none; }
+.arena.portrait .cell .num { font-size: 9px; }
+.arena.portrait .cell .icon { font-size: 15px; }
+.arena.portrait .cell .tokens { left: 2px; right: 2px; bottom: 2px; gap: 1px; }
+.arena.portrait .token { width: 14px; height: 14px; font-size: 8px; border-width: 1px; }
 .panel {
   background: var(--card); border: 1px solid var(--line); border-radius: var(--radius);
   padding: 14px 16px; min-height: 0; display: flex; flex-direction: column;
@@ -221,8 +244,9 @@ input:focus { border-color: var(--accent); }
 @keyframes shake { 0% { transform: rotate(-8deg); } 50% { transform: rotate(8deg); } 100% { transform: rotate(-8deg); } }
 
 @media (max-width: 900px) {
-  .game-bottom { grid-template-columns: 1fr; }
-  .board { grid-template-rows: repeat(4, 70px); gap: 5px; padding: 8px; }
-  .cell .name { display: none; }
+  #screen-game.active { padding: 8px; gap: 8px; min-height: 0; }
+  .arena.landscape .game-bottom { grid-template-columns: 1fr 1fr; overflow: auto; }
+  .arena.landscape .cell .name { display: none; }
+  .game-head .logo.small { display: none; }
   .entry, .lobby, .result { width: 100%; max-width: 460px; }
 }

@@ -19,8 +19,8 @@ var g_curEvents = null;
 var g_curIdx = 0;
 var g_toastTimer = null;
 var g_diceTimer = null;
-var COLS = 8;
-var ROWS = 4;
+var COLS = 12;              // 보드 격자 크기 (drawBoard에서 화면 방향에 맞춰 다시 정함)
+var ROWS = 8;
 var temp1, temp2; // 쓰는곳 있음
 
 var CELL_ICON = {
@@ -173,22 +173,48 @@ function drawLobby() {
 
 /*===================== 게임화면 =====================*/
 
-// 보드 그리기 (지그재그)
+// 보드 격자 크기 정하기: 칸 수(n)가 둘레(2*(가로+세로)-4)를 채우도록.
+// 가로 화면은 넓게(36칸 → 12x8), 세로 화면은 길게(36칸 → 7x13).
+function calcBoardSize(n) {
+  var half = Math.ceil((n + 4) / 2); // 가로 + 세로
+  var bPortrait = window.innerWidth < window.innerHeight;
+  var cols = Math.round(half * (bPortrait ? 0.35 : 0.6));
+  if (cols < 3) cols = 3;
+  if (cols > half - 3) cols = half - 3;
+  return { cols: cols, rows: half - cols, portrait: bPortrait };
+}
+
+// i번 칸의 격자 위치. 왼쪽 위에서 시작해 시계 방향으로 테두리를 돈다.
+function perimeterCell(i, cols, rows) {
+  if (i < cols) return { row: 0, col: i };
+  i -= cols;
+  if (i < rows - 1) return { row: i + 1, col: cols - 1 };
+  i -= rows - 1;
+  if (i < cols - 1) return { row: rows - 1, col: cols - 2 - i };
+  i -= cols - 1;
+  return { row: rows - 2 - i, col: 0 };
+}
+
+// 보드 그리기 (화면 테두리를 두르는 트랙, 가운데는 패널)
 function drawBoard() {
   var g = g_room.game;
   var turnId = null;
   if (g_room.status == 'playing') turnId = g.players[g.turnIndex].id;
+  var size = calcBoardSize(g.board.length);
+  COLS = size.cols;
+  ROWS = size.rows;
+  var arena = document.getElementById('arena');
+  arena.style.setProperty('--cols', COLS);
+  arena.style.setProperty('--rows', ROWS);
+  arena.className = 'arena ' + (size.portrait ? 'portrait' : 'landscape');
   var html = '';
   for (var i = 0; i < g.board.length; i++) {
     var type = g.board[i];
-    var row = Math.floor(i / COLS);
-    var col;
-    if (row % 2 == 0) col = i % COLS;
-    else col = COLS - 1 - (i % COLS);
+    var pc = perimeterCell(i, COLS, ROWS);
     var icon = CELL_ICON[type];
     var name = CELL_NAME[type];
     if (icon == undefined) { icon = ''; name = ''; }
-    html += '<div class="cell t-' + type + '" data-index="' + i + '" style="grid-row:' + (ROWS - row) + ';grid-column:' + (col + 1) + '">';
+    html += '<div class="cell t-' + type + '" data-index="' + i + '" style="grid-row:' + (pc.row + 1) + ';grid-column:' + (pc.col + 1) + '">';
     html += '<span class="num">' + i + '</span>';
     html += '<span class="icon">' + icon + '</span>';
     html += '<span class="name">' + name + '</span>';
@@ -572,4 +598,9 @@ window.onload = function () {
   document.getElementById('nickname').value = getCookieNick();
   document.getElementById('lobby-url').innerHTML = location.origin;
   render();
+};
+
+// 화면 방향이 바뀌면 보드 배치(가로/세로)도 다시 그림
+window.onresize = function () {
+  if (g_room != null && g_room.game && g_room.status != 'lobby') drawBoard();
 };

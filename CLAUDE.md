@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 개요
 
-다이스 대시: 4자리 방 코드로 모인 2~8명이 브라우저에서 즐기는 턴제 주사위 보드 레이스(30칸)예요. Vercel에 정적 페이지로 배포하고, 실시간 통신은 Supabase Realtime(Broadcast + Presence)으로 해요. **게임 서버가 따로 없고, 방장 브라우저가 방 서버 역할을 해요.** 게임 규칙과 요구사항의 기준 문서는 `PRD.md`예요.
+다이스 대시: 4자리 방 코드로 모인 2~8명이 브라우저에서 즐기는 턴제 주사위 보드 레이스(36칸, 화면 테두리를 두르는 트랙)예요. Vercel에 정적 페이지로 배포하고, 실시간 통신은 Supabase Realtime(Broadcast + Presence)으로 해요. **게임 서버가 따로 없고, 방장 브라우저가 방 서버 역할을 해요.** 게임 규칙과 요구사항의 기준 문서는 `PRD.md`예요.
 
 ## 명령어
 

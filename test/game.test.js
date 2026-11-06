@@ -145,11 +145,11 @@ test('아이템은 턴당 1장, 미보유 아이템 거부', () => {
 
 test('결승 도달/초과 시 승리, 이후 행동 거부', () => {
   const g = newGame();
-  g.players[0].position = 27;
+  g.players[0].position = 29;
   g.players[1].position = 12;
   g.players[2].position = 12;
   roll(g, 'A', rng([6]));
-  assert.strictEqual(pos(g, 'A'), 30);
+  assert.strictEqual(pos(g, 'A'), 35);
   assert.strictEqual(g.finished, true);
   assert.strictEqual(g.winnerId, 'A');
   assert.deepStrictEqual(g.rankings.map((r) => r.rank), [1, 2, 2]);
