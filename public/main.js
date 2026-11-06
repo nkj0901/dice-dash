@@ -603,7 +603,7 @@ function ui_onError(msg) {
 }
 
 function ui_onDisconnect() {
-  if (g_room) toast('서버와 연결이 끊겼습니다. 다시 입장해 주세요.');
+  if (g_room) toast('서버와 연결이 끊겼어요. 다시 연결하는 중...', 'info');
   g_room = null;
   g_deferred = null;
   g_queue = [];
@@ -614,6 +614,8 @@ window.onload = function () {
   document.getElementById('nickname').value = getCookieNick();
   document.getElementById('lobby-url').innerHTML = location.origin;
   render();
+  // 새로고침 전에 들어가 있던 방이 있으면 자동으로 다시 입장
+  if (net_resume()) toast('이전 방에 다시 연결하는 중...', 'info');
 };
 
 // 화면 방향이 바뀌면 보드 배치(가로/세로)도 다시 그림
