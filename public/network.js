@@ -54,6 +54,7 @@ var g_createCode = '';
 var flag = false;         // ??
 var g_leaveTimers = {};   // id -> 탈락 처리 예약 타이머 (유예 중)
 var g_bResuming = false;  // 새로고침 후 자동 재입장 중
+var g_bWaitCreate = false; // 방 만들기: 기존 참가자 presence를 다 받을 때까지 코드 중복 검사 대기 (#4)
 
 // 초기화
 if (window.DICE_CONFIG && window.DICE_CONFIG.supabaseUrl && window.DICE_CONFIG.supabaseKey && window.supabase) {
@@ -218,6 +219,7 @@ function net_open(code, mode) {
   g_channel = ch;
   g_seenTbl = {};
   g_bReadyCalled = false;
+  g_bWaitCreate = false;
   g_readyMode = mode;
 
   ch.on('broadcast', { event: 'c2s' }, function (msg) {
@@ -233,6 +235,11 @@ function net_open(code, mode) {
     // 한번이라도 봤던 사람이 없어지면 나간걸로 침
     var st = ch.presenceState();
     var k;
+    if (g_bWaitCreate && st[g_myId]) {
+      // 내 presence가 반영된 sync면 기존 참가자 목록도 이미 받은 상태 → 이제 코드 중복 검사
+      g_bWaitCreate = false;
+      net_afterCreate();
+    }
     for (k in st) {
       g_seenTbl[k] = true;
       // 유예 중에 돌아왔으면 탈락 예약 취소
@@ -257,7 +264,9 @@ function net_open(code, mode) {
         if (g_bReadyCalled) return;
         g_bReadyCalled = true;
         if (g_readyMode == 'create') {
-          net_afterCreate();
+          // track 직후 presenceState()에는 기존 참가자가 아직 없을 수 있어서, 내가 보이는 sync를 기다림
+          if (ch.presenceState()[g_myId]) net_afterCreate();
+          else g_bWaitCreate = true;
         } else {
           net_afterJoin();
         }

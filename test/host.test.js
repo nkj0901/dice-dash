@@ -110,6 +110,15 @@ test('상태 직렬화 후에도 게임 종료 여부가 유지됨', () => {
   host2.handle('h', 'game:roll');
 });
 
+test('끝난 방에 입장하면 결과 화면 안내가 나옴', () => {
+  const { host, last } = setup();
+  host.handle('b', 'room:join', { nickname: '비' });
+  host.handle('h', 'game:start');
+  host.leave('b');
+  host.handle('c', 'room:join', { nickname: '씨' });
+  assert.deepStrictEqual(last('app:error'), { to: 'c', event: 'app:error', payload: { message: '게임이 끝나 결과 화면에 있어요. 방장이 다시 하기를 누르면 입장할 수 있어요.' } });
+});
+
 test('초당 요청 제한', () => {
   const { host, out } = setup();
   for (let i = 0; i < 12; i++) host.handle('h', 'game:roll');

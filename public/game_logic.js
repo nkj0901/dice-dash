@@ -520,6 +520,10 @@ function host_onMessage(from, ev, data) {
         net_hostOut(from, 'app:error', { message: v.error });
         return;
       }
+      if (room.status == 'finished') {
+        net_hostOut(from, 'app:error', { message: '게임이 끝나 결과 화면에 있어요. 방장이 다시 하기를 누르면 입장할 수 있어요.' });
+        return;
+      }
       if (room.status != 'lobby') {
         net_hostOut(from, 'app:error', { message: '이미 게임이 진행 중인 방입니다.' });
         return;
