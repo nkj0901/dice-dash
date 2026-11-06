@@ -44,6 +44,16 @@ vendor/supabase.js → config.js (window.DICE_CONFIG) → game_logic.js → netw
 
 `test/legacy_loader.js`가 `vm.runInThisContext`로 `public/game_logic.js`를 Node 전역에 불러온 뒤, 테스트용 API로 감싸요(`game.createGame/roll/useItem/removePlayer`, `HostRoom.create/fromState`). 방 서버 상태가 전역 하나뿐이라서, 로더가 호출할 때마다 `g_hostRoom`과 `g_rateTbl`을 인스턴스별로 바꿔 끼워요. `game_logic.js`의 전역 함수 이름이나 시그니처를 바꾸면 이 로더도 같이 고쳐야 해요. 주사위와 아이템은 `rng` 객체(`{die(), item()}`)를 넘겨서 결과를 정해 두고 테스트해요.
 
+## 변경 반영 규칙 (사용자 지시)
+
+사용자가 코드 수정을 요청하면, 따로 묻지 않고 끝까지 반영해요. Vercel이 GitHub `main`에 연결돼 있어서 push하면 바로 배포돼요.
+
+1. 수정한 뒤 `npm test`를 실행해요. 실패하면 커밋하지 말고 결과를 사용자에게 먼저 알려요.
+2. 통과하면 `main`에 커밋하고 `git push`해요. 이 작업은 사용자가 미리 허락했어요.
+3. 배포가 끝났는지 확인하고(`vercel ls`로 최신 배포가 Ready인지), 배포 주소를 알려 줘요.
+
+저장소(github.com/nkj0901/dice-dash)는 공개예요. `.env.local`, `.vercel/` 같은 비밀 정보는 절대 커밋하지 마세요.
+
 ## 주의할 점
 
 - 코드는 ES5 스타일(`var`, 전역 함수, `==`)이에요. 수정할 때도 같은 스타일을 유지하고, `import`/`export`나 모듈 문법은 쓰지 마세요. 브라우저가 스크립트 태그로 그대로 불러와요.
