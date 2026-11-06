@@ -47,6 +47,7 @@ var g_joinRetryTimer = null;
 var g_joinTimeoutTimer = null;
 var g_bClosing = false;
 var g_seenTbl = {};       // presence 본 사람들
+var g_everSeen = {};      // 이 채널에서 한 번이라도 presence로 본 사람 (나가도 안 지움)
 var g_bReadyCalled = false;
 var g_readyMode = '';     // 'create' / 'join'
 var g_createNick = '';
@@ -175,39 +176,41 @@ function net_scheduleRemove(id) {
 
 // 누가 나감
 function net_onLeave(goneArr) {
-  var i;
   if (!g_lastState) return;
   if (g_hostRoom) {
-    for (i = 0; i < goneArr.length; i++) net_scheduleRemove(goneArr[i]);
+    for (var i = 0; i < goneArr.length; i++) net_scheduleRemove(goneArr[i]);
     return;
   }
-  var oldHost = g_lastState.hostId;
-  var bHostGone = false;
-  for (i = 0; i < goneArr.length; i++) {
-    if (goneArr[i] == oldHost) bHostGone = true;
-  }
-  if (!bHostGone) return;
+  net_checkHost();
+}
 
-  // 방장 나감 -> 남은사람중 첫번째가 방장
+// 방장이 presence에 없으면 남은 사람 중 첫 번째가 방장을 이어받음.
+// 방장이 빠진 그 순간 한 번만 보면, 다음 순번도 거의 동시에 나갔을 때 아무도 이어받지 않아 방이 멈춤 (#3)
+// → presence sync 때마다 "지금 상태의 방장이 아직 있나"를 다시 확인한다.
+function net_checkHost() {
+  var i;
+  if (!g_lastState || g_hostRoom || !g_channel) return;
+  var oldHost = g_lastState.hostId;
   var present = g_channel.presenceState();
+  // 방장을 본 적도 없으면 아직 presence를 다 못 받은 것일 수 있으니 기다림
+  if (present[oldHost] || !g_everSeen[oldHost]) return;
+
   present[g_myId] = true;
   var next = null;
   for (i = 0; i < g_lastState.members.length; i++) {
     var m = g_lastState.members[i];
-    var bGone = false;
-    for (var j = 0; j < goneArr.length; j++) {
-      if (goneArr[j] == m.id) bGone = true;
-    }
-    if (m.id != oldHost && !bGone && present[m.id]) {
+    if (m.id != oldHost && present[m.id]) {
       next = m;
       break;
     }
   }
   if (next == null || next.id != g_myId) return;
-  // 방은 바로 이어받되, 나간 사람(이전 방장 포함)은 유예 후에 탈락 처리
+  // 방은 바로 이어받되, 자리에 없는 사람(이전 방장 포함)은 유예 후에 탈락 처리
   host_takeOver(g_lastState, g_myId);
   host_sendAll();
-  for (i = 0; i < goneArr.length; i++) net_scheduleRemove(goneArr[i]);
+  for (i = 0; i < g_lastState.members.length; i++) {
+    if (!present[g_lastState.members[i].id]) net_scheduleRemove(g_lastState.members[i].id);
+  }
 }
 
 // 채널 열기
@@ -217,6 +220,7 @@ function net_open(code, mode) {
   });
   g_channel = ch;
   g_seenTbl = {};
+  g_everSeen = {};
   g_bReadyCalled = false;
   g_readyMode = mode;
 
@@ -235,6 +239,7 @@ function net_open(code, mode) {
     var k;
     for (k in st) {
       g_seenTbl[k] = true;
+      g_everSeen[k] = true;
       // 유예 중에 돌아왔으면 탈락 예약 취소
       if (g_leaveTimers[k]) {
         clearTimeout(g_leaveTimers[k]);
@@ -249,6 +254,7 @@ function net_open(code, mode) {
       delete g_seenTbl[gone[i]];
     }
     if (gone.length > 0) net_onLeave(gone);
+    else net_checkHost();
   });
   ch.subscribe(function (status) {
     if (ch != g_channel) return;
