@@ -1,0 +1,17 @@
+{
+  "name": "dice-dash",
+  "version": "0.2.0",
+  "description": "방 코드로 모인 2~8명이 즐기는 턴제 주사위 보드 레이스 (Vercel + Supabase Realtime)",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/build.js",
+    "dev": "node scripts/build.js && npx --yes serve@14.2.4 public -l 3000",
+    "test": "node test/game.test.js && node test/host.test.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "devDependencies": {
+    "@supabase/supabase-js": "2.45.4"
+  }
+}
